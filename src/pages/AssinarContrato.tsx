@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, PenTool } from "lucide-react";
+import { CheckCircle, PenTool, Copy, CreditCard, QrCode } from "lucide-react";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 
 const AssinarContrato = () => {
   const { token } = useParams<{ token: string }>();
@@ -15,6 +16,7 @@ const AssinarContrato = () => {
   const [saving, setSaving] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [configPag, setConfigPag] = useState<any>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -37,6 +39,9 @@ const AssinarContrato = () => {
           .select("*")
           .eq("contrato_id", data.id);
         setItens(itensData || []);
+        // Fetch payment config
+        const { data: pagData } = await supabase.from("config_pagamentos").select("*").limit(1).single();
+        if (pagData) setConfigPag(pagData);
         setLoading(false);
       });
   }, [token]);
@@ -225,13 +230,73 @@ const AssinarContrato = () => {
 
           {/* Signature */}
           {signed ? (
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-green-700 mb-1">Contrato Assinado!</h3>
-              <p className="text-gray-500">Assinado em {contrato.assinado_em ? new Date(contrato.assinado_em).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")}</p>
-              {contrato.assinatura_cliente && (
-                <div className="mt-4 inline-block border-2 border-gray-200 rounded-lg p-2 bg-white">
-                  <img src={contrato.assinatura_cliente} alt="Assinatura" className="max-h-24" />
+            <div className="py-8">
+              <div className="text-center mb-8">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-green-700 mb-1">Contrato Assinado!</h3>
+                <p className="text-gray-500">Assinado em {contrato.assinado_em ? new Date(contrato.assinado_em).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")}</p>
+                {contrato.assinatura_cliente && (
+                  <div className="mt-4 inline-block border-2 border-gray-200 rounded-lg p-2 bg-white">
+                    <img src={contrato.assinatura_cliente} alt="Assinatura" className="max-h-24" />
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Section */}
+              {configPag && (configPag.chave_pix || configPag.link_pagamento_cartao) && (
+                <div className="border-t-2 border-gray-200 pt-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-[#7f3ee0]" />
+                    Formas de Pagamento
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {configPag.chave_pix && (
+                      <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <QrCode className="w-5 h-5 text-[#7f3ee0]" />
+                          <h4 className="font-semibold text-gray-700">PIX</h4>
+                        </div>
+                        <div className="flex justify-center">
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <QRCodeSVG value={configPag.chave_pix} size={160} />
+                          </div>
+                        </div>
+                        {configPag.nome_recebedor && (
+                          <p className="text-sm text-gray-600 text-center">
+                            <span className="text-gray-400">Recebedor:</span> {configPag.nome_recebedor}
+                            {configPag.banco && <span className="text-gray-400"> — {configPag.banco}</span>}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                          <span className="text-sm text-gray-600 truncate flex-1 font-mono">{configPag.chave_pix}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(configPag.chave_pix);
+                              toast.success("Chave PIX copiada!");
+                            }}
+                          >
+                            <Copy className="w-3 h-3 mr-1" /> Copiar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {configPag.link_pagamento_cartao && (
+                      <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col items-center justify-center space-y-4">
+                        <CreditCard className="w-12 h-12 text-[#7f3ee0]" />
+                        <h4 className="font-semibold text-gray-700">Cartão de Crédito</h4>
+                        <p className="text-sm text-gray-500 text-center">Pague de forma segura com seu cartão de crédito ou débito.</p>
+                        <Button
+                          onClick={() => window.open(configPag.link_pagamento_cartao, "_blank")}
+                          className="bg-[#7f3ee0] hover:bg-[#6b2fcf] text-white w-full"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" /> Pagar com Cartão
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

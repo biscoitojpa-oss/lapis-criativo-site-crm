@@ -59,7 +59,7 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
 
 const complexidadeLabel: Record<string, string> = { baixo: "Baixo", medio: "Médio", alto: "Alto" };
 
-export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
+export function generatePropostaPDF(proposta: any, itens: any[], cliente: any, configPag?: any) {
   const doc = new jsPDF();
   addHeader(doc, "Proposta", proposta.numero);
   let y = 55;
@@ -201,6 +201,29 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
     finalY += 5;
   }
 
+  // Payment section
+  if (configPag && (configPag.chave_pix || configPag.link_pagamento_cartao)) {
+    finalY = checkPageBreak(doc, finalY, 40);
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("FORMA DE PAGAMENTO", 20, finalY + 3);
+    finalY += 14;
+
+    if (configPag.chave_pix) {
+      finalY = addSection(doc, finalY, "PIX:", configPag.chave_pix);
+      if (configPag.nome_recebedor) finalY = addSection(doc, finalY, "Recebedor:", configPag.nome_recebedor);
+      if (configPag.banco) finalY = addSection(doc, finalY, "Banco:", configPag.banco);
+      finalY += 3;
+    }
+    if (configPag.link_pagamento_cartao) {
+      finalY = addSection(doc, finalY, "Cartão:", configPag.link_pagamento_cartao);
+    }
+    finalY += 5;
+  }
+
   if (proposta.observacoes) {
     finalY = checkPageBreak(doc, finalY, 15);
     doc.setFontSize(9);
@@ -213,7 +236,7 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
   doc.save(`Proposta_${proposta.numero}_${cliente?.nome || "cliente"}.pdf`);
 }
 
-export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
+export function generateContratoPDF(contrato: any, itens: any[], cliente: any, configPag?: any) {
   const doc = new jsPDF();
   addHeader(doc, "Contrato", contrato.numero);
   let y = 55;
@@ -351,6 +374,29 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
       finalY = addSection(doc, finalY, "Total:", `R$ ${Number(contrato.valor_total).toFixed(2)}`);
       finalY += 5;
     }
+  }
+
+  // Payment section
+  if (configPag && (configPag.chave_pix || configPag.link_pagamento_cartao)) {
+    finalY = checkPageBreak(doc, finalY, 40);
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("FORMA DE PAGAMENTO", 20, finalY + 3);
+    finalY += 14;
+
+    if (configPag.chave_pix) {
+      finalY = addSection(doc, finalY, "PIX:", configPag.chave_pix);
+      if (configPag.nome_recebedor) finalY = addSection(doc, finalY, "Recebedor:", configPag.nome_recebedor);
+      if (configPag.banco) finalY = addSection(doc, finalY, "Banco:", configPag.banco);
+      finalY += 3;
+    }
+    if (configPag.link_pagamento_cartao) {
+      finalY = addSection(doc, finalY, "Cartão:", configPag.link_pagamento_cartao);
+    }
+    finalY += 5;
   }
 
   if (contrato.observacoes) {

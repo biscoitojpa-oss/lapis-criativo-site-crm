@@ -22,15 +22,18 @@ const PropostaDetalhe = () => {
   const [itens, setItens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [configPag, setConfigPag] = useState<any>(null);
 
   useEffect(() => {
     if (!propostaId) return;
     Promise.all([
       supabase.from("propostas").select("*, clientes(nome, empresa, email, whatsapp)").eq("id", propostaId).single(),
       supabase.from("proposta_itens").select("*, servicos(nome, prazo_entrega, nivel_complexidade, entregaveis, requer_reuniao, categoria)").eq("proposta_id", propostaId),
-    ]).then(([pRes, iRes]) => {
+      supabase.from("config_pagamentos").select("*").limit(1).single(),
+    ]).then(([pRes, iRes, pagRes]) => {
       setProposta(pRes.data);
       setItens(iRes.data || []);
+      if (pagRes.data) setConfigPag(pagRes.data);
       setLoading(false);
     });
   }, [propostaId]);
@@ -46,7 +49,7 @@ const PropostaDetalhe = () => {
   };
 
   const handleDownloadPDF = () => {
-    generatePropostaPDF(proposta, itens, proposta.clientes);
+    generatePropostaPDF(proposta, itens, proposta.clientes, configPag);
     toast.success("PDF gerado com sucesso!");
   };
 

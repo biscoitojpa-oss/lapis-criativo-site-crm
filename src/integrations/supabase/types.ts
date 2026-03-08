@@ -14,6 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
+      clientes: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          cep: string | null
+          cidade: string | null
+          cnpj_cpf: string | null
+          criado_em: string
+          email: string | null
+          empresa: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          cep?: string | null
+          cidade?: string | null
+          cnpj_cpf?: string | null
+          criado_em?: string
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          cep?: string | null
+          cidade?: string | null
+          cnpj_cpf?: string | null
+          criado_em?: string
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      contrato_itens: {
+        Row: {
+          contrato_id: string
+          descricao: string
+          id: string
+          quantidade: number
+          servico_id: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          contrato_id: string
+          descricao: string
+          id?: string
+          quantidade?: number
+          servico_id?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          contrato_id?: string
+          descricao?: string
+          id?: string
+          quantidade?: number
+          servico_id?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrato_itens_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrato_itens_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos: {
+        Row: {
+          atualizado_em: string
+          cliente_id: string
+          criado_em: string
+          criado_por: string
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          duracao_meses: number | null
+          id: string
+          numero: number
+          observacoes: string | null
+          proposta_id: string | null
+          status: Database["public"]["Enums"]["contrato_status"]
+          tipo_pagamento: Database["public"]["Enums"]["tipo_pagamento"]
+          titulo: string
+          valor_mensal: number | null
+          valor_total: number
+        }
+        Insert: {
+          atualizado_em?: string
+          cliente_id: string
+          criado_em?: string
+          criado_por: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          duracao_meses?: number | null
+          id?: string
+          numero?: number
+          observacoes?: string | null
+          proposta_id?: string | null
+          status?: Database["public"]["Enums"]["contrato_status"]
+          tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento"]
+          titulo: string
+          valor_mensal?: number | null
+          valor_total?: number
+        }
+        Update: {
+          atualizado_em?: string
+          cliente_id?: string
+          criado_em?: string
+          criado_por?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          duracao_meses?: number | null
+          id?: string
+          numero?: number
+          observacoes?: string | null
+          proposta_id?: string | null
+          status?: Database["public"]["Enums"]["contrato_status"]
+          tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento"]
+          titulo?: string
+          valor_mensal?: number | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           atualizado_em: string
@@ -80,6 +254,137 @@ export type Database = {
         }
         Relationships: []
       }
+      proposta_itens: {
+        Row: {
+          descricao: string
+          id: string
+          proposta_id: string
+          quantidade: number
+          servico_id: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          descricao: string
+          id?: string
+          proposta_id: string
+          quantidade?: number
+          servico_id?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          descricao?: string
+          id?: string
+          proposta_id?: string
+          quantidade?: number
+          servico_id?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_itens_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_itens_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propostas: {
+        Row: {
+          atualizado_em: string
+          cliente_id: string
+          criado_em: string
+          criado_por: string
+          descricao: string | null
+          id: string
+          numero: number
+          observacoes: string | null
+          status: Database["public"]["Enums"]["proposta_status"]
+          titulo: string
+          validade_dias: number
+          valor_total: number
+        }
+        Insert: {
+          atualizado_em?: string
+          cliente_id: string
+          criado_em?: string
+          criado_por: string
+          descricao?: string | null
+          id?: string
+          numero?: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["proposta_status"]
+          titulo: string
+          validade_dias?: number
+          valor_total?: number
+        }
+        Update: {
+          atualizado_em?: string
+          cliente_id?: string
+          criado_em?: string
+          criado_por?: string
+          descricao?: string | null
+          id?: string
+          numero?: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["proposta_status"]
+          titulo?: string
+          validade_dias?: number
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propostas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servicos: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          descricao: string | null
+          id: string
+          nome: string
+          tipo_cobranca: string
+          valor_padrao: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo_cobranca?: string
+          valor_padrao?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo_cobranca?: string
+          valor_padrao?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -113,6 +418,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "member"
+      contrato_status: "ativo" | "encerrado" | "cancelado" | "suspenso"
+      proposta_status:
+        | "rascunho"
+        | "enviada"
+        | "aprovada"
+        | "recusada"
+        | "cancelada"
+      tipo_pagamento: "mensal" | "unico"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -241,6 +554,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "member"],
+      contrato_status: ["ativo", "encerrado", "cancelado", "suspenso"],
+      proposta_status: [
+        "rascunho",
+        "enviada",
+        "aprovada",
+        "recusada",
+        "cancelada",
+      ],
+      tipo_pagamento: ["mensal", "unico"],
     },
   },
 } as const

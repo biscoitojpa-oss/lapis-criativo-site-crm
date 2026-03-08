@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Brain, BarChart3, Settings, LogOut, Pencil,
+  LayoutDashboard, Users, Brain, BarChart3, LogOut, Pencil,
   MapPin, Search, Target, Globe, LineChart, Calendar, Instagram,
+  Briefcase, FileText, FilePlus, UserPlus, Package,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,8 +15,15 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/crm", icon: LayoutDashboard },
+  { title: "Clientes", url: "/crm/clientes", icon: Briefcase },
+  { title: "Propostas", url: "/crm/propostas", icon: FileText },
+  { title: "Contratos", url: "/crm/contratos", icon: FilePlus },
   { title: "Leads", url: "/crm/leads", icon: Users },
-  { title: "Ferramentas IA", url: "/crm/ferramentas", icon: Brain },
+];
+
+const cadastroItems = [
+  { title: "Serviços", url: "/crm/servicos", icon: Package },
+  { title: "Usuários", url: "/crm/usuarios", icon: UserPlus },
 ];
 
 const toolItems = [
@@ -40,69 +48,46 @@ export function CRMSidebar() {
 
   useEffect(() => {
     if (user) {
-      supabase
-        .from("profiles")
-        .select("nome, cargo")
-        .eq("user_id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) setProfile(data);
-        });
+      supabase.from("profiles").select("nome, cargo").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data) setProfile(data); });
     }
   }, [user]);
+
+  const renderGroup = (label: string, items: typeof mainItems) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <NavLink to={item.url} end className="hover:bg-muted/50" activeClassName="bg-primary/10 text-primary font-medium">
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {!collapsed && <span className="text-xs">{item.title}</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo */}
         <div className="p-4 flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Pencil className="w-4 h-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-display font-bold text-sm">
-              Lápis <span className="text-primary">CRM</span>
-            </span>
+            <span className="font-display font-bold text-sm">Lápis <span className="text-primary">CRM</span></span>
           )}
         </div>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className="hover:bg-muted/50" activeClassName="bg-primary/10 text-primary font-medium">
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Ferramentas IA</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {toolItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className="hover:bg-muted/50" activeClassName="bg-primary/10 text-primary font-medium">
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span className="text-xs">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderGroup("Principal", mainItems)}
+        {renderGroup("Cadastros", cadastroItems)}
+        {renderGroup("Ferramentas IA", toolItems)}
       </SidebarContent>
-
       <SidebarFooter>
         {!collapsed && profile && (
           <div className="px-4 py-2 text-xs text-muted-foreground">

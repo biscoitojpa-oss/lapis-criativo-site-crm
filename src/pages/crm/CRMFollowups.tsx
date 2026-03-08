@@ -106,6 +106,28 @@ const CRMFollowups = () => {
     cancelado: followups.filter(f => f.status === "cancelado").length,
   };
 
+  const autoMetrics = useMemo(() => {
+    const autoFollowups = followups.filter(f => f.origem === "auto");
+    const totalAuto = autoFollowups.length;
+    const enviados = autoFollowups.filter(f => f.status === "enviado").length;
+    // "cancelado" with error containing "respondeu" means client replied
+    const respondidos = autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).length;
+    
+    // Desistidos: phones that received max follow-ups (3+) and never responded
+    const phonesSent = new Map<string, number>();
+    for (const f of autoFollowups) {
+      if (f.status === "enviado") {
+        phonesSent.set(f.telefone, (phonesSent.get(f.telefone) || 0) + 1);
+      }
+    }
+    const phonesRespondidos = new Set(autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).map(f => f.telefone));
+    const desistidos = Array.from(phonesSent.entries()).filter(([phone, count]) => count >= 3 && !phonesRespondidos.has(phone)).length;
+    
+    const taxaResposta = enviados > 0 ? Math.round((respondidos / enviados) * 100) : 0;
+    
+    return { totalAuto, enviados, respondidos, desistidos, taxaResposta };
+  }, [followups]);
+
   const addFollowup = async () => {
     if (!newPhone.trim() || !newMessage.trim() || !newDate) {
       toast.error("Preencha telefone, mensagem e data");

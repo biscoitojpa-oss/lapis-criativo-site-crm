@@ -33,18 +33,6 @@ const agentItems = [
   { title: "Buscador de Leads", url: "/crm/buscador-leads", icon: Crosshair },
 ];
 
-const toolItems = [
-  { title: "Google Meu Negócio", url: "/crm/ferramentas/google-business", icon: MapPin },
-  { title: "Instagram", url: "/crm/ferramentas/instagram-analyzer", icon: Instagram },
-  { title: "SEO", url: "/crm/ferramentas/seo-analyzer", icon: Search },
-  { title: "Estratégia", url: "/crm/ferramentas/marketing-strategy", icon: Target },
-  { title: "Landing Page", url: "/crm/ferramentas/landing-page", icon: Globe },
-  { title: "Calendário", url: "/crm/ferramentas/content-calendar", icon: Calendar },
-  { title: "Google Ads", url: "/crm/ferramentas/google-ads", icon: BarChart3 },
-  { title: "Bio Instagram", url: "/crm/ferramentas/instagram-bio", icon: Pencil },
-  { title: "Leads Strategy", url: "/crm/ferramentas/lead-generation", icon: Users },
-  { title: "Concorrentes", url: "/crm/ferramentas/competitor-analysis", icon: LineChart },
-];
 
 export function CRMSidebar() {
   const { state } = useSidebar();

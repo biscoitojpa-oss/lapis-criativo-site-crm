@@ -412,24 +412,72 @@ FLUXO DE HANDOFF:
       // Schedule a follow-up for 24h later
       const followupDate = new Date();
       followupDate.setHours(followupDate.getHours() + 24);
-      // Adjust to business hours (10:00)
       if (followupDate.getHours() < 10) followupDate.setHours(10, 0, 0, 0);
       if (followupDate.getHours() > 19) {
         followupDate.setDate(followupDate.getDate() + 1);
         followupDate.setHours(10, 0, 0, 0);
       }
 
+      // Generate a personalized follow-up message based on conversation context
+      const recentMessages = aiMessages.slice(-6).map((m: any) => {
+        const text = typeof m.content === "string" ? m.content : "[mídia]";
+        return `${m.role === "user" ? "Cliente" : "Agente"}: ${text}`;
+      }).join("\n");
+
+      let followupMsg = `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Estou por aqui! 🚀`;
+
+      try {
+        const followupAI = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: `Você é o Criativo X da Lápis Criativo. Gere UMA mensagem curta de follow-up (máx 2 frases) para WhatsApp.
+A mensagem deve:
+- Ser simpática e natural, como uma pessoa real
+- Referenciar sutilmente o ASSUNTO da última conversa (sem repetir detalhes demais)
+- Convidar o cliente a retomar a conversa
+- Usar 1-2 emojis
+- NÃO mencionar que o cliente recusou falar com humano
+- NÃO usar formatação, listas ou markdown
+Responda APENAS com a mensagem, nada mais.`,
+              },
+              {
+                role: "user",
+                content: `Nome do cliente: ${pushName || "cliente"}\n\nÚltimas mensagens da conversa:\n${recentMessages}\n\nGere a mensagem de follow-up:`,
+              },
+            ],
+          }),
+        });
+
+        if (followupAI.ok) {
+          const followupData = await followupAI.json();
+          const generated = followupData.choices?.[0]?.message?.content?.trim();
+          if (generated && generated.length > 10 && generated.length < 500) {
+            followupMsg = generated;
+          }
+        }
+      } catch (e) {
+        console.error("Follow-up AI generation error:", e);
+      }
+
       await supabase.from("whatsapp_followups").insert({
         telefone: phone,
         nome_contato: pushName,
-        mensagem: `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Se quiser saber mais sobre nossos serviços de marketing digital, é só me chamar! Estou por aqui. 🚀`,
+        mensagem: followupMsg,
         motivo: "remarketing",
         instancia: instanceName,
         agendado_para: followupDate.toISOString(),
         origem: "auto",
       });
 
-      console.log(`Follow-up agendado para ${phone} em ${followupDate.toISOString()}`);
+      console.log(`Follow-up personalizado agendado para ${phone}: "${followupMsg.slice(0, 80)}..."`);
     }
 
     // Split reply into human-like separate messages

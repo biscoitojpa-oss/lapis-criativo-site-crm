@@ -14,6 +14,14 @@ const statusColors: Record<string, string> = {
   cancelada: "bg-muted text-muted-foreground",
 };
 
+const statusLabels: Record<string, string> = {
+  rascunho: "Gerada",
+  enviada: "Enviada",
+  aprovada: "Aceita",
+  recusada: "Não Aceita",
+  cancelada: "Cancelada",
+};
+
 const CRMPropostas = () => {
   const [propostas, setPropostas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

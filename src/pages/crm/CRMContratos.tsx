@@ -117,7 +117,11 @@ const CRMContratos = () => {
                     <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs capitalize">{c.tipo_pagamento}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs capitalize ${statusColors[c.status] || ""}`}>{c.status}</span>
+                    {(() => {
+                      const label = c.assinatura_cliente ? "Assinado" : (statusLabels[c.status] || c.status);
+                      const color = c.assinatura_cliente ? "bg-green-500/20 text-green-400" : (statusColors[c.status] || "");
+                      return <span className={`px-2 py-1 rounded-full text-xs ${color}`}>{label}</span>;
+                    })()}
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">{new Date(c.data_inicio).toLocaleDateString("pt-BR")}</td>
                 </tr>

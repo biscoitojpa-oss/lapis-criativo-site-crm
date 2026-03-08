@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle, Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import WhatsAppChat from "@/components/WhatsAppChat";
 
 const propostaStatusLabels: Record<string, { label: string; color: string }> = {
@@ -27,8 +31,11 @@ const ClienteDetalhe = () => {
   const [contratos, setContratos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const loadData = () => {
     if (!clienteId) return;
     Promise.all([
       supabase.from("clientes").select("*").eq("id", clienteId).single(),
@@ -40,7 +47,37 @@ const ClienteDetalhe = () => {
       setContratos(ctRes.data || []);
       setLoading(false);
     });
-  }, [clienteId]);
+  };
+
+  useEffect(() => { loadData(); }, [clienteId]);
+
+  const openEdit = () => {
+    setEditForm({
+      nome: cliente.nome || "",
+      email: cliente.email || "",
+      telefone: cliente.telefone || "",
+      whatsapp: cliente.whatsapp || "",
+      empresa: cliente.empresa || "",
+      cnpj_cpf: cliente.cnpj_cpf || "",
+      endereco: cliente.endereco || "",
+      cidade: cliente.cidade || "",
+      estado: cliente.estado || "",
+      cep: cliente.cep || "",
+      observacoes: cliente.observacoes || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!editForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("clientes").update(editForm).eq("id", clienteId!);
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    toast.success("Cliente atualizado");
+    setEditOpen(false);
+    loadData();
+  };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
   if (!cliente) return <div className="p-8 text-center">Cliente não encontrado</div>;
@@ -61,7 +98,10 @@ const ClienteDetalhe = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Info do Cliente */}
         <div className="glass-card p-6 space-y-4">
-          <h1 className="font-display text-xl font-bold">{cliente.nome}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-display text-xl font-bold">{cliente.nome}</h1>
+            <Button variant="ghost" size="icon" onClick={openEdit}><Pencil className="w-4 h-4" /></Button>
+          </div>
           {cliente.empresa && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Building className="w-4 h-4" />{cliente.empresa}</div>}
           {cliente.email && <div className="flex items-center gap-2 text-sm"><Mail className="w-4 h-4 text-muted-foreground" /><a href={`mailto:${cliente.email}`} className="hover:text-primary">{cliente.email}</a></div>}
           {cliente.whatsapp && (
@@ -148,6 +188,66 @@ const ClienteDetalhe = () => {
           <WhatsAppChat phone={clientePhone} contactName={cliente.nome} />
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">Nome *</label>
+                <Input value={editForm.nome} onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Telefone</label>
+                <Input value={editForm.telefone} onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">WhatsApp</label>
+                <Input value={editForm.whatsapp} onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Empresa</label>
+                <Input value={editForm.empresa} onChange={(e) => setEditForm({ ...editForm, empresa: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">CNPJ/CPF</label>
+                <Input value={editForm.cnpj_cpf} onChange={(e) => setEditForm({ ...editForm, cnpj_cpf: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Cidade</label>
+                <Input value={editForm.cidade} onChange={(e) => setEditForm({ ...editForm, cidade: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Estado</label>
+                <Input value={editForm.estado} onChange={(e) => setEditForm({ ...editForm, estado: e.target.value })} className="bg-background/50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">CEP</label>
+                <Input value={editForm.cep} onChange={(e) => setEditForm({ ...editForm, cep: e.target.value })} className="bg-background/50" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Endereço</label>
+              <Input value={editForm.endereco} onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })} className="bg-background/50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Observações</label>
+              <Textarea value={editForm.observacoes} onChange={(e) => setEditForm({ ...editForm, observacoes: e.target.value })} className="bg-background/50" rows={3} />
+            </div>
+            <Button variant="hero" className="w-full" onClick={handleSave} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Search, Instagram, Loader2, ExternalLink, Phone } from "lucide-react";
+import { MapPin, Search, Instagram, Loader2, ExternalLink, Phone, UserPlus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,8 @@ interface LeadResult {
   url: string;
   descricao: string;
   telefone?: string;
+  email?: string;
+  saved?: boolean;
 }
 
 const CRMBuscadorLeads = () => {
@@ -19,6 +21,17 @@ const CRMBuscadorLeads = () => {
   const [cidade, setCidade] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<LeadResult[]>([]);
+  const [savingAll, setSavingAll] = useState(false);
+
+  const extractPhone = (text: string): string | undefined => {
+    const match = text.match(/\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}/);
+    return match ? match[0] : undefined;
+  };
+
+  const extractEmail = (text: string): string | undefined => {
+    const match = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    return match ? match[0] : undefined;
+  };
 
   const searchGoogleBusiness = async () => {
     if (!query.trim() || !cidade.trim()) {
@@ -40,12 +53,16 @@ const CRMBuscadorLeads = () => {
       if (error) throw error;
 
       const items = data?.data || data?.results || [];
-      const leads: LeadResult[] = items.map((item: any) => ({
-        nome: item.title || "Sem nome",
-        url: item.url || "",
-        descricao: item.description || item.markdown?.slice(0, 200) || "",
-        telefone: extractPhone(item.description || item.markdown || ""),
-      }));
+      const leads: LeadResult[] = items.map((item: any) => {
+        const text = item.description || item.markdown || "";
+        return {
+          nome: item.title || "Sem nome",
+          url: item.url || "",
+          descricao: text.slice(0, 200),
+          telefone: extractPhone(text),
+          email: extractEmail(text),
+        };
+      });
 
       setResults(leads);
       if (leads.length === 0) toast.info("Nenhum resultado encontrado");
@@ -78,11 +95,16 @@ const CRMBuscadorLeads = () => {
       const items = data?.data || data?.results || [];
       const leads: LeadResult[] = items
         .filter((item: any) => item.url?.includes("instagram.com"))
-        .map((item: any) => ({
-          nome: item.title?.replace(" • Instagram photos and videos", "").replace(" (@", " (") || "Perfil",
-          url: item.url || "",
-          descricao: item.description || "",
-        }));
+        .map((item: any) => {
+          const text = item.description || "";
+          return {
+            nome: item.title?.replace(" • Instagram photos and videos", "").replace(" (@", " (") || "Perfil",
+            url: item.url || "",
+            descricao: text,
+            telefone: extractPhone(text),
+            email: extractEmail(text),
+          };
+        });
 
       setResults(leads);
       if (leads.length === 0) toast.info("Nenhum perfil encontrado");
@@ -93,14 +115,64 @@ const CRMBuscadorLeads = () => {
     }
   };
 
-  const extractPhone = (text: string): string | undefined => {
-    const match = text.match(/\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}/);
-    return match ? match[0] : undefined;
-  };
-
   const handleSearch = () => {
     if (tab === "google") searchGoogleBusiness();
     else searchInstagram();
+  };
+
+  const saveLead = async (index: number) => {
+    const r = results[index];
+    const ferramenta = tab === "google" ? "Google" : "Instagram";
+    const phone = r.telefone?.replace(/\D/g, "") || "";
+
+    const { error } = await supabase.from("leads").insert({
+      nome: r.nome,
+      email: r.email || `${ferramenta.toLowerCase()}-lead@sem-email.com`,
+      whatsapp: phone || "sem-whatsapp",
+      ferramenta,
+      dados_entrada: { url: r.url, descricao: r.descricao },
+    });
+
+    if (error) {
+      toast.error("Erro ao salvar lead");
+      return;
+    }
+
+    setResults((prev) => prev.map((item, i) => (i === index ? { ...item, saved: true } : item)));
+    toast.success(`${r.nome} salvo como lead!`);
+  };
+
+  const saveAllWithPhone = async () => {
+    const withPhone = results
+      .map((r, i) => ({ ...r, index: i }))
+      .filter((r) => r.telefone && !r.saved);
+
+    if (withPhone.length === 0) {
+      toast.info("Nenhum lead com telefone para salvar");
+      return;
+    }
+
+    setSavingAll(true);
+    const ferramenta = tab === "google" ? "Google" : "Instagram";
+
+    const rows = withPhone.map((r) => ({
+      nome: r.nome,
+      email: r.email || `${ferramenta.toLowerCase()}-lead@sem-email.com`,
+      whatsapp: r.telefone?.replace(/\D/g, "") || "",
+      ferramenta,
+      dados_entrada: { url: r.url, descricao: r.descricao },
+    }));
+
+    const { error } = await supabase.from("leads").insert(rows);
+
+    if (error) {
+      toast.error("Erro ao salvar leads");
+    } else {
+      const savedIndexes = new Set(withPhone.map((r) => r.index));
+      setResults((prev) => prev.map((item, i) => (savedIndexes.has(i) ? { ...item, saved: true } : item)));
+      toast.success(`${withPhone.length} leads salvos!`);
+    }
+    setSavingAll(false);
   };
 
   return (
@@ -145,8 +217,12 @@ const CRMBuscadorLeads = () => {
 
       {results.length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="p-4 border-b border-border/50">
+          <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h2 className="font-semibold text-sm">{results.length} resultados encontrados</h2>
+            <Button variant="hero" size="sm" onClick={saveAllWithPhone} disabled={savingAll} className="text-xs">
+              {savingAll ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <UserPlus className="w-3 h-3 mr-1" />}
+              Salvar todos com telefone
+            </Button>
           </div>
           <div className="divide-y divide-border/20">
             {results.map((r, i) => (
@@ -155,16 +231,30 @@ const CRMBuscadorLeads = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">{r.nome}</h3>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.descricao}</p>
-                    {r.telefone && (
-                      <div className="flex items-center gap-1 mt-2 text-green-500 text-xs">
-                        <Phone className="w-3 h-3" /> {r.telefone}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3 mt-2">
+                      {r.telefone && (
+                        <span className="flex items-center gap-1 text-emerald-500 text-xs">
+                          <Phone className="w-3 h-3" /> {r.telefone}
+                        </span>
+                      )}
+                      {r.email && (
+                        <span className="text-xs text-muted-foreground">{r.email}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    {r.saved ? (
+                      <Button variant="ghost" size="sm" className="text-emerald-500 text-xs h-7" disabled>
+                        <Check className="w-3 h-3 mr-1" /> Salvo
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="text-primary text-xs h-7" onClick={() => saveLead(i)}>
+                        <UserPlus className="w-3 h-3 mr-1" /> Salvar
+                      </Button>
+                    )}
                     {r.telefone && (
                       <a href={`https://wa.me/55${r.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="sm" className="text-green-500 text-xs h-7">WhatsApp</Button>
+                        <Button variant="ghost" size="sm" className="text-emerald-500 text-xs h-7">WhatsApp</Button>
                       </a>
                     )}
                     <a href={r.url} target="_blank" rel="noopener noreferrer">

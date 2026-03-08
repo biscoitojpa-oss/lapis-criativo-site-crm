@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText, TrendingUp, Users, Ban, MessageSquare } from "lucide-react";
+import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText, TrendingUp, Users, Ban, MessageSquare, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,12 +68,21 @@ interface Followup {
   criado_em: string;
 }
 
+type PeriodFilter = "all" | "week" | "month";
+type OriginFilter = "all" | "manual" | "auto";
+type StatusFilter = "all" | "agendado" | "enviado" | "erro" | "cancelado";
+
 const CRMFollowups = () => {
   const { user } = useAuth();
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+
+  // Filters
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   // New follow-up form
   const [newPhone, setNewPhone] = useState("");
@@ -90,7 +99,7 @@ const CRMFollowups = () => {
       .from("whatsapp_followups")
       .select("*")
       .order("agendado_para", { ascending: true })
-      .limit(200);
+      .limit(500);
     setFollowups((data || []) as unknown as Followup[]);
     setLoading(false);
   }, []);
@@ -99,21 +108,42 @@ const CRMFollowups = () => {
     fetchFollowups();
   }, [fetchFollowups]);
 
-  const stats = {
-    agendado: followups.filter(f => f.status === "agendado").length,
-    enviado: followups.filter(f => f.status === "enviado").length,
-    erro: followups.filter(f => f.status === "erro").length,
-    cancelado: followups.filter(f => f.status === "cancelado").length,
-  };
+  // Filtered followups
+  const filteredFollowups = useMemo(() => {
+    let result = followups;
+
+    if (periodFilter !== "all") {
+      const now = new Date();
+      const cutoff = new Date();
+      if (periodFilter === "week") cutoff.setDate(now.getDate() - 7);
+      else if (periodFilter === "month") cutoff.setMonth(now.getMonth() - 1);
+      result = result.filter(f => new Date(f.criado_em) >= cutoff);
+    }
+
+    if (originFilter !== "all") {
+      result = result.filter(f => f.origem === originFilter);
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter(f => f.status === statusFilter);
+    }
+
+    return result;
+  }, [followups, periodFilter, originFilter, statusFilter]);
+
+  const stats = useMemo(() => ({
+    agendado: filteredFollowups.filter(f => f.status === "agendado").length,
+    enviado: filteredFollowups.filter(f => f.status === "enviado").length,
+    erro: filteredFollowups.filter(f => f.status === "erro").length,
+    cancelado: filteredFollowups.filter(f => f.status === "cancelado").length,
+  }), [filteredFollowups]);
 
   const autoMetrics = useMemo(() => {
-    const autoFollowups = followups.filter(f => f.origem === "auto");
+    const autoFollowups = filteredFollowups.filter(f => f.origem === "auto");
     const totalAuto = autoFollowups.length;
     const enviados = autoFollowups.filter(f => f.status === "enviado").length;
-    // "cancelado" with error containing "respondeu" means client replied
     const respondidos = autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).length;
     
-    // Desistidos: phones that received max follow-ups (3+) and never responded
     const phonesSent = new Map<string, number>();
     for (const f of autoFollowups) {
       if (f.status === "enviado") {
@@ -126,7 +156,7 @@ const CRMFollowups = () => {
     const taxaResposta = enviados > 0 ? Math.round((respondidos / enviados) * 100) : 0;
     
     return { totalAuto, enviados, respondidos, desistidos, taxaResposta };
-  }, [followups]);
+  }, [filteredFollowups]);
 
   const addFollowup = async () => {
     if (!newPhone.trim() || !newMessage.trim() || !newDate) {
@@ -295,6 +325,50 @@ const CRMFollowups = () => {
         </div>
       </div>
 
+      {/* Filters */}
+      <Card className="glass-card">
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">Filtros:</span>
+            </div>
+            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo período</SelectItem>
+                <SelectItem value="week">Última semana</SelectItem>
+                <SelectItem value="month">Último mês</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={originFilter} onValueChange={(v) => setOriginFilter(v as OriginFilter)}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas origens</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="auto">Automático</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="agendado">Agendado</SelectItem>
+                <SelectItem value="enviado">Enviado</SelectItem>
+                <SelectItem value="erro">Erro</SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+            {(periodFilter !== "all" || originFilter !== "all" || statusFilter !== "all") && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setPeriodFilter("all"); setOriginFilter("all"); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">{filteredFollowups.length} resultado(s)</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="glass-card"><CardContent className="pt-4 text-center">
@@ -362,11 +436,11 @@ const CRMFollowups = () => {
         <CardContent>
           {loading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
-          ) : followups.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhum follow-up agendado</p>
+          ) : filteredFollowups.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhum follow-up encontrado</p>
           ) : (
             <div className="space-y-3">
-              {followups.map(fu => (
+              {filteredFollowups.map(fu => (
                 <div key={fu.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

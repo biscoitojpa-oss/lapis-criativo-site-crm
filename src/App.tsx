@@ -27,6 +27,7 @@ import CRMCriativoX from "./pages/crm/CRMCriativoX";
 import CRMBuscadorLeads from "./pages/crm/CRMBuscadorLeads";
 import CRMWhatsApp from "./pages/crm/CRMWhatsApp";
 import CRMPagamentos from "./pages/crm/CRMPagamentos";
+import CRMFollowups from "./pages/crm/CRMFollowups";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="buscador-leads" element={<CRMBuscadorLeads />} />
               <Route path="whatsapp" element={<CRMWhatsApp />} />
               <Route path="pagamentos" element={<CRMPagamentos />} />
+              <Route path="followups" element={<CRMFollowups />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

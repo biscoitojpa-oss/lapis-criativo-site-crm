@@ -368,13 +368,16 @@ ${knowledgeContext}
 REGRAS:
 - Nunca invente preços ou prazos que não estejam na base de conhecimento
 - Se perguntarem algo fora do escopo, responda educadamente que vai verificar com a equipe
-- Nunca invente preços ou prazos que não estejam na base de conhecimento
-- Se perguntarem algo fora do escopo, responda educadamente que vai verificar com a equipe
 - Incentive o lead a agendar uma reunião ou falar com um consultor
 - Se receber um áudio, responda ao que foi dito
 - Se receber uma imagem, comente sobre ela de forma relevante
 - Se o cliente quiser falar com uma pessoa real, diga que vai transferir para um consultor
-- Quando o assunto for complexo ou o cliente parecer insatisfeito, sugira falar com um humano`;
+- Quando o assunto for complexo ou o cliente parecer insatisfeito, sugira falar com um humano
+
+FLUXO DE HANDOFF:
+- Quando o cliente pedir para falar com um humano, ofereça transferir.
+- Se o cliente RECUSAR o handoff (ex: "não precisa", "agora não", "depois", "não quero"), responda que tudo bem e encerre o assunto de forma educada. Inclua EXATAMENTE o texto "[FOLLOWUP_DECLINED]" no final da sua resposta (será invisível para o cliente). Isso agendará automaticamente um follow-up.
+- Se o cliente aceitar, transfira normalmente.`;
 
     // Call AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -398,7 +401,36 @@ REGRAS:
     }
 
     const aiData = await aiResponse.json();
-    const fullReply = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem. Vou encaminhar para nossa equipe! 🙏";
+    let fullReply = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem. Vou encaminhar para nossa equipe! 🙏";
+
+    // Check if AI detected follow-up decline
+    const followupDeclined = fullReply.includes("[FOLLOWUP_DECLINED]");
+    if (followupDeclined) {
+      // Remove the tag from the reply
+      fullReply = fullReply.replace("[FOLLOWUP_DECLINED]", "").trim();
+
+      // Schedule a follow-up for 24h later
+      const followupDate = new Date();
+      followupDate.setHours(followupDate.getHours() + 24);
+      // Adjust to business hours (10:00)
+      if (followupDate.getHours() < 10) followupDate.setHours(10, 0, 0, 0);
+      if (followupDate.getHours() > 19) {
+        followupDate.setDate(followupDate.getDate() + 1);
+        followupDate.setHours(10, 0, 0, 0);
+      }
+
+      await supabase.from("whatsapp_followups").insert({
+        telefone: phone,
+        nome_contato: pushName,
+        mensagem: `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Se quiser saber mais sobre nossos serviços de marketing digital, é só me chamar! Estou por aqui. 🚀`,
+        motivo: "remarketing",
+        instancia: instanceName,
+        agendado_para: followupDate.toISOString(),
+        origem: "auto",
+      });
+
+      console.log(`Follow-up agendado para ${phone} em ${followupDate.toISOString()}`);
+    }
 
     // Split reply into human-like separate messages
     const messageChunks = splitMessage(fullReply);

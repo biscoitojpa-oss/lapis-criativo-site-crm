@@ -198,12 +198,43 @@ const CRMWhatsApp = () => {
     finally { setLoadingQueue(false); }
   }, []);
 
+  const fetchContacts = useCallback(async () => {
+    setLoadingContacts(true);
+    try {
+      const { data } = await supabase
+        .from("whatsapp_mensagens")
+        .select("telefone, nome_contato, mensagem, criado_em, direcao")
+        .order("criado_em", { ascending: false })
+        .limit(500);
+      if (data) {
+        const map = new Map<string, { phone: string; name: string; lastMsg: string; lastDate: string; unread: number }>();
+        data.forEach((m: any) => {
+          if (!map.has(m.telefone)) {
+            map.set(m.telefone, {
+              phone: m.telefone,
+              name: m.nome_contato || m.telefone,
+              lastMsg: m.mensagem,
+              lastDate: m.criado_em,
+              unread: m.direcao === "recebida" ? 1 : 0,
+            });
+          } else if (m.direcao === "recebida") {
+            const existing = map.get(m.telefone)!;
+            existing.unread += 1;
+          }
+        });
+        setContacts(Array.from(map.values()));
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoadingContacts(false); }
+  }, []);
+
   useEffect(() => {
     fetchInstances();
     fetchMetrics();
     fetchConfig();
     fetchQueue();
-  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue]);
+    fetchContacts();
+  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue, fetchContacts]);
 
   const saveConfig = async () => {
     if (!config) return;

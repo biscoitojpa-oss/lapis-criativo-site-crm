@@ -466,6 +466,83 @@ const CRMWhatsApp = () => {
           <TabsTrigger value="fila"><Send className="w-4 h-4 mr-1.5" />Fila de Envio</TabsTrigger>
         </TabsList>
 
+        {/* ===== CONVERSAS ===== */}
+        <TabsContent value="conversas" className="space-y-4">
+          <div className="flex gap-4" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
+            {/* Contact list */}
+            <div className="w-80 shrink-0 glass-card flex flex-col overflow-hidden">
+              <div className="p-3 border-b border-border/50">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    placeholder="Buscar contato..."
+                    className="pl-10 bg-background/50 border-border/50 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+                <span className="text-xs text-muted-foreground">{contacts.length} conversas</span>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={fetchContacts}>
+                  <RefreshCw className={`w-3 h-3 mr-1 ${loadingContacts ? "animate-spin" : ""}`} />Atualizar
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {loadingContacts && contacts.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">Carregando...</p>
+                ) : contacts.filter(c =>
+                  c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                  c.phone.includes(contactSearch)
+                ).length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhuma conversa encontrada</p>
+                ) : (
+                  contacts
+                    .filter(c => c.name.toLowerCase().includes(contactSearch.toLowerCase()) || c.phone.includes(contactSearch))
+                    .map((contact) => (
+                      <button
+                        key={contact.phone}
+                        onClick={() => setSelectedContact({ phone: contact.phone, name: contact.name })}
+                        className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-muted/20 transition-colors ${
+                          selectedContact?.phone === contact.phone ? "bg-muted/30 border-l-2 border-l-primary" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <Phone className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-sm truncate">{contact.name}</p>
+                              <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                                {new Date(contact.lastDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">{contact.lastMsg}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                )}
+              </div>
+            </div>
+
+            {/* Chat panel */}
+            <div className="flex-1 glass-card overflow-hidden">
+              {selectedContact ? (
+                <WhatsAppChat phone={selectedContact.phone} contactName={selectedContact.name} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Selecione uma conversa para começar</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
         {/* ===== MÉTRICAS ===== */}
         <TabsContent value="metricas" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

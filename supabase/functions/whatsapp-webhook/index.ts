@@ -193,6 +193,20 @@ serve(async (req) => {
       .eq("ativo", true)
       .single();
 
+    // Notify all team members about the incoming message
+    const { data: allProfiles } = await supabase.from("profiles").select("user_id");
+    if (allProfiles) {
+      for (const p of allProfiles) {
+        await supabase.from("notificacoes").insert({
+          user_id: p.user_id,
+          titulo: "Nova mensagem WhatsApp",
+          mensagem: `${pushName} (${phone}): ${incomingLabel.slice(0, 100)}${incomingLabel.length > 100 ? "..." : ""}`,
+          tipo: "whatsapp",
+          link: `/crm/whatsapp`,
+        });
+      }
+    }
+
     if (handoff) {
       console.log(`Handoff ativo para ${phone}, agente pausado. Aguardando humano.`);
       return new Response(JSON.stringify({ ok: true, handoff: true }), {
@@ -211,13 +225,11 @@ serve(async (req) => {
     const wantsHuman = humanKeywords.some(kw => lowerText.includes(kw));
 
     if (wantsHuman) {
-      // Activate handoff
       await supabase.from("whatsapp_handoff").upsert(
         { telefone: phone, ativo: true, ativado_em: new Date().toISOString() },
         { onConflict: "telefone" }
       );
 
-      // Send farewell message
       const handoffMsg = "Entendido! 😊 Vou transferir você para um de nossos consultores. Ele vai te responder em breve. Fique à vontade!";
       await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
         method: "POST",
@@ -230,16 +242,15 @@ serve(async (req) => {
         mensagem: handoffMsg, direcao: "enviada", instancia: instanceName,
       });
 
-      // Notify team
-      const { data: profiles } = await supabase.from("profiles").select("user_id");
-      if (profiles) {
-        for (const p of profiles) {
+      // Notify team about handoff
+      if (allProfiles) {
+        for (const p of allProfiles) {
           await supabase.from("notificacoes").insert({
             user_id: p.user_id,
             titulo: "Atendimento Humano Solicitado",
             mensagem: `${pushName} (${phone}) pediu para falar com um humano.`,
             tipo: "handoff",
-            link: `/crm/clientes`,
+            link: `/crm/whatsapp`,
           });
         }
       }
@@ -249,13 +260,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-      telefone: phone,
-      nome_contato: pushName,
-      mensagem: incomingLabel,
-      direcao: "recebida",
-      instancia: instanceName,
-      tipo: msgType,
-    });
 
     // Build AI messages array
     const aiMessages: any[] = [];

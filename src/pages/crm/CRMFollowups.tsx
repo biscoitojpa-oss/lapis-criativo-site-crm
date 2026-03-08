@@ -293,6 +293,47 @@ const CRMFollowups = () => {
         </CardContent></Card>
       </div>
 
+      {/* Metrics Panel - Auto Follow-ups */}
+      {autoMetrics.totalAuto > 0 && (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Métricas de Follow-ups Automáticos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <MessageSquare className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-xl font-bold">{autoMetrics.totalAuto}</p>
+                <p className="text-xs text-muted-foreground">Total criados</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Send className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-emerald-400">{autoMetrics.enviados}</p>
+                <p className="text-xs text-muted-foreground">Enviados</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-blue-400">{autoMetrics.respondidos}</p>
+                <p className="text-xs text-muted-foreground">Respondidos (cancelados)</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <TrendingUp className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-amber-400">{autoMetrics.taxaResposta}%</p>
+                <p className="text-xs text-muted-foreground">Taxa de resposta</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Ban className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                <p className="text-xl font-bold text-muted-foreground">{autoMetrics.desistidos}</p>
+                <p className="text-xs text-muted-foreground">Desistidos (3+ sem resposta)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* List */}
       <Card className="glass-card">
         <CardHeader><CardTitle className="text-sm">Follow-ups Agendados</CardTitle></CardHeader>

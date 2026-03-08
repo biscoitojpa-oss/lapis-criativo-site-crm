@@ -4,6 +4,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Zap, Calendar, Timer,
   Activity, BarChart3, Wifi, WifiOff, Heart, Play, Plus, Trash2,
   Power, LogOut, QrCode, Settings, Copy, MessageCircle, Search, Phone,
+  CalendarClock,
 } from "lucide-react";
 import WhatsAppChat from "@/components/WhatsAppChat";
 import { Button } from "@/components/ui/button";

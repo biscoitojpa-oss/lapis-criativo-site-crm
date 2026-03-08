@@ -27,7 +27,7 @@ const PropostaDetalhe = () => {
     if (!propostaId) return;
     Promise.all([
       supabase.from("propostas").select("*, clientes(nome, empresa, email, whatsapp)").eq("id", propostaId).single(),
-      supabase.from("proposta_itens").select("*, servicos(nome)").eq("proposta_id", propostaId),
+      supabase.from("proposta_itens").select("*, servicos(nome, prazo_entrega, nivel_complexidade, entregaveis, requer_reuniao, categoria)").eq("proposta_id", propostaId),
     ]).then(([pRes, iRes]) => {
       setProposta(pRes.data);
       setItens(iRes.data || []);

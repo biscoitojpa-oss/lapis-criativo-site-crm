@@ -115,6 +115,8 @@ export type Database = {
       }
       contratos: {
         Row: {
+          assinado_em: string | null
+          assinatura_cliente: string | null
           atualizado_em: string
           cliente_id: string
           criado_em: string
@@ -130,10 +132,13 @@ export type Database = {
           status: Database["public"]["Enums"]["contrato_status"]
           tipo_pagamento: Database["public"]["Enums"]["tipo_pagamento"]
           titulo: string
+          token_assinatura: string | null
           valor_mensal: number | null
           valor_total: number
         }
         Insert: {
+          assinado_em?: string | null
+          assinatura_cliente?: string | null
           atualizado_em?: string
           cliente_id: string
           criado_em?: string
@@ -149,10 +154,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["contrato_status"]
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento"]
           titulo: string
+          token_assinatura?: string | null
           valor_mensal?: number | null
           valor_total?: number
         }
         Update: {
+          assinado_em?: string | null
+          assinatura_cliente?: string | null
           atualizado_em?: string
           cliente_id?: string
           criado_em?: string
@@ -168,6 +176,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["contrato_status"]
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento"]
           titulo?: string
+          token_assinatura?: string | null
           valor_mensal?: number | null
           valor_total?: number
         }

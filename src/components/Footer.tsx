@@ -1,4 +1,5 @@
-import { Pencil, Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import logoImg from "@/assets/logo-lapis-criativo.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -24,12 +25,7 @@ const Footer = () => {
           {/* Logo & Description */}
           <div className="md:col-span-2 space-y-6">
             <a href="#" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <Pencil className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-xl">
-                Lápis <span className="neon-text">Criativo</span>
-              </span>
+              <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
             </a>
             <p className="text-muted-foreground max-w-md">
               Agência de marketing digital especializada em transformar negócios

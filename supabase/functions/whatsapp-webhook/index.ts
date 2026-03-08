@@ -184,6 +184,13 @@ serve(async (req) => {
       tipo: msgType,
     });
 
+    // Cancel any pending auto follow-ups since client is active
+    await supabase.from("whatsapp_followups")
+      .update({ status: "cancelado", atualizado_em: new Date().toISOString(), erro: "Cliente respondeu" })
+      .eq("telefone", phone)
+      .eq("status", "agendado")
+      .eq("origem", "auto");
+
     // ===== HUMAN HANDOFF CHECK =====
     // Check if human handoff is active for this phone
     const { data: handoff } = await supabase

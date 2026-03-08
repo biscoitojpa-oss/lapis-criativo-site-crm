@@ -123,7 +123,7 @@ const DiagnosticoPage = () => {
               {!isLoading && result && (
                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                   <Button variant="whatsapp" size="lg" asChild>
-                    <a href="https://wa.me/5521965982906?text=Olá! Fiz o diagnóstico de marketing e gostaria de conversar sobre os resultados." target="_blank" rel="noopener noreferrer">
+                    <a href="https://wa.me/5521991796781?text=Olá! Fiz o diagnóstico de marketing e gostaria de conversar sobre os resultados." target="_blank" rel="noopener noreferrer">
                       Falar com Especialista no WhatsApp
                     </a>
                   </Button>

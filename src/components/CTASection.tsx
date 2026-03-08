@@ -23,7 +23,7 @@ const CTASection = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="whatsapp" size="xl" asChild>
               <a
-                href="https://wa.me/5521965982906"
+                href="https://wa.me/5521991796781"
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -150,7 +150,7 @@ const ToolPage = () => {
                     Nova Análise
                   </Button>
                   <Button variant="whatsapp" asChild>
-                    <a href="https://wa.me/5521965982906?text=Olá! Acabei de usar a ferramenta de IA e gostaria de saber mais." target="_blank" rel="noopener noreferrer">
+                    <a href="https://wa.me/5521991796781?text=Olá! Acabei de usar a ferramenta de IA e gostaria de saber mais." target="_blank" rel="noopener noreferrer">
                       Falar com Especialista
                     </a>
                   </Button>

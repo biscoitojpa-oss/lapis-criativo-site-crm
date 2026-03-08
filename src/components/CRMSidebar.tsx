@@ -84,7 +84,7 @@ export function CRMSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup defaultOpen={location.pathname.includes("/crm/ferramentas/")}>
+        <SidebarGroup>
           <SidebarGroupLabel>Ferramentas IA</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

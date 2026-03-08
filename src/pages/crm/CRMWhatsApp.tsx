@@ -618,8 +618,16 @@ const CRMWhatsApp = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-sm">{name}</span>
                               <Badge variant="outline" className={getStateColor(state)}>{getStateLabel(state)}</Badge>
-                              {inst.instance?.integration && <Badge variant="secondary" className="text-xs">{inst.instance.integration}</Badge>}
+                              {(inst.integration || inst.instance?.integration) && <Badge variant="secondary" className="text-xs">{inst.integration || inst.instance.integration}</Badge>}
                             </div>
+                            {(inst.profileName || inst.number) && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {inst.profileName && <span>{inst.profileName}</span>}
+                                {inst.profileName && inst.number && <span> · </span>}
+                                {inst.number && <span>{inst.number}</span>}
+                                {inst._count?.Message != null && <span> · {inst._count.Message.toLocaleString("pt-BR")} msgs</span>}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">

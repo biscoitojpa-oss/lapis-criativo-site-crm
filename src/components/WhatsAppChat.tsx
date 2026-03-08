@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, Phone, RefreshCw } from "lucide-react";
+import { Send, Phone, RefreshCw, Bot, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const [loading, setLoading] = useState(true);
   const [instances, setInstances] = useState<EvolutionInstance[]>([]);
   const [selectedInstance, setSelectedInstance] = useState(defaultInstance || "");
+  const [handoffActive, setHandoffActive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 
@@ -84,6 +85,33 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
     fetchInstances();
   }, []);
 
+  const checkHandoff = useCallback(async () => {
+    const { data } = await supabase
+      .from("whatsapp_handoff")
+      .select("ativo")
+      .eq("telefone", normalizedPhone)
+      .eq("ativo", true)
+      .maybeSingle();
+    setHandoffActive(!!data);
+  }, [normalizedPhone]);
+
+  const toggleHandoff = async () => {
+    if (handoffActive) {
+      // Deactivate - resume bot
+      await supabase.from("whatsapp_handoff").update({ ativo: false, desativado_em: new Date().toISOString() }).eq("telefone", normalizedPhone);
+      setHandoffActive(false);
+      toast.success("Bot reativado para este contato");
+    } else {
+      // Activate - pause bot
+      await supabase.from("whatsapp_handoff").upsert(
+        { telefone: normalizedPhone, ativo: true, ativado_em: new Date().toISOString() },
+        { onConflict: "telefone" }
+      );
+      setHandoffActive(true);
+      toast.success("Bot pausado — atendimento humano ativado");
+    }
+  };
+
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
@@ -94,7 +122,8 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
       .limit(200);
     setMessages((data || []) as unknown as Message[]);
     setLoading(false);
-  }, [normalizedPhone]);
+    checkHandoff();
+  }, [normalizedPhone, checkHandoff]);
 
   useEffect(() => {
     if (!normalizedPhone) return;
@@ -196,11 +225,27 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant={handoffActive ? "default" : "ghost"}
+            size="sm"
+            className={`h-8 text-xs ${handoffActive ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}`}
+            onClick={toggleHandoff}
+            title={handoffActive ? "Clique para reativar o bot" : "Clique para pausar o bot e atender manualmente"}
+          >
+            {handoffActive ? <><UserCheck className="w-3.5 h-3.5 mr-1" />Humano</> : <><Bot className="w-3.5 h-3.5 mr-1" />Bot</>}
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchMessages}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
+
+      {/* Handoff banner */}
+      {handoffActive && (
+        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-center">
+          <p className="text-xs text-amber-400">⚠️ Bot pausado — Atendimento humano ativo. Clique em "Humano" para reativar o bot.</p>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">

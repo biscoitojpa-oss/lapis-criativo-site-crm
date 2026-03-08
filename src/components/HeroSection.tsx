@@ -40,7 +40,7 @@ const HeroSection = () => {
               </Button>
               <Button variant="whatsapp" size="lg" asChild>
                 <a
-                  href="https://wa.me/5521965982906"
+                  href="https://wa.me/5521991796781"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group"

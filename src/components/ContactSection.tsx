@@ -9,8 +9,8 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Telefone / WhatsApp",
-    value: "(21) 96598-2906",
-    href: "tel:+5521965982906",
+    value: "(21) 99179-6781",
+    href: "tel:+5521991796781",
   },
   {
     icon: Mail,

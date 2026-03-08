@@ -364,9 +364,13 @@ ${knowledgeContext}
 REGRAS:
 - Nunca invente preços ou prazos que não estejam na base de conhecimento
 - Se perguntarem algo fora do escopo, responda educadamente que vai verificar com a equipe
+- Nunca invente preços ou prazos que não estejam na base de conhecimento
+- Se perguntarem algo fora do escopo, responda educadamente que vai verificar com a equipe
 - Incentive o lead a agendar uma reunião ou falar com um consultor
 - Se receber um áudio, responda ao que foi dito
-- Se receber uma imagem, comente sobre ela de forma relevante`;
+- Se receber uma imagem, comente sobre ela de forma relevante
+- Se o cliente quiser falar com uma pessoa real, diga que vai transferir para um consultor
+- Quando o assunto for complexo ou o cliente parecer insatisfeito, sugira falar com um humano`;
 
     // Call AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

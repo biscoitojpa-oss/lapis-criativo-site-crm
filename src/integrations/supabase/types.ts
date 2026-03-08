@@ -438,6 +438,9 @@ export type Database = {
           prazo_entrega: number | null
           requer_reuniao: boolean | null
           tipo_cobranca: string
+          valor_anual: number | null
+          valor_implantacao: number | null
+          valor_mensal: number | null
           valor_padrao: number | null
         }
         Insert: {
@@ -453,6 +456,9 @@ export type Database = {
           prazo_entrega?: number | null
           requer_reuniao?: boolean | null
           tipo_cobranca?: string
+          valor_anual?: number | null
+          valor_implantacao?: number | null
+          valor_mensal?: number | null
           valor_padrao?: number | null
         }
         Update: {
@@ -468,6 +474,9 @@ export type Database = {
           prazo_entrega?: number | null
           requer_reuniao?: boolean | null
           tipo_cobranca?: string
+          valor_anual?: number | null
+          valor_implantacao?: number | null
+          valor_mensal?: number | null
           valor_padrao?: number | null
         }
         Relationships: []

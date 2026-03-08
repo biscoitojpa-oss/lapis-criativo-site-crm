@@ -49,7 +49,7 @@ const PropostaDetalhe = () => {
   };
 
   const handleDownloadPDF = () => {
-    generatePropostaPDF(proposta, itens, proposta.clientes);
+    generatePropostaPDF(proposta, itens, proposta.clientes, configPag);
     toast.success("PDF gerado com sucesso!");
   };
 

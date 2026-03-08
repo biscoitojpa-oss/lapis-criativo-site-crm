@@ -321,6 +321,84 @@ const CRMWhatsApp = () => {
     setConfig({ ...config, dias_envio: newDays });
   };
 
+  // Instance management functions
+  const createInstance = async () => {
+    if (!newInstanceName.trim()) { toast.error("Informe o nome da instância"); return; }
+    setCreatingInstance(true);
+    try {
+      const webhookUrl = newInstanceWebhook.trim() || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook`;
+      const result = await callEvolution("createInstance", newInstanceName.trim(), {
+        instanceName: newInstanceName.trim(),
+        webhookUrl,
+      });
+      toast.success(`Instância "${newInstanceName}" criada!`);
+      if (result.qrcode?.base64) {
+        setQrCodeData(prev => ({ ...prev, [newInstanceName.trim()]: result.qrcode.base64 }));
+        setShowQrFor(newInstanceName.trim());
+      }
+      setShowCreateDialog(false);
+      setNewInstanceName("");
+      setNewInstanceWebhook("");
+      fetchInstances();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setCreatingInstance(false); }
+  };
+
+  const deleteInstance = async (name: string) => {
+    if (!confirm(`Tem certeza que deseja excluir a instância "${name}"?`)) return;
+    setDeletingInstance(name);
+    try {
+      await callEvolution("deleteInstance", name);
+      toast.success(`Instância "${name}" excluída`);
+      fetchInstances();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setDeletingInstance(null); }
+  };
+
+  const restartInstance = async (name: string) => {
+    setRestartingInstance(name);
+    try {
+      await callEvolution("restart", name);
+      toast.success(`Instância "${name}" reiniciada`);
+      setTimeout(() => checkHealth(name), 2000);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setRestartingInstance(null); }
+  };
+
+  const logoutInstance = async (name: string) => {
+    if (!confirm(`Desconectar a instância "${name}" do WhatsApp?`)) return;
+    setLoggingOut(name);
+    try {
+      await callEvolution("logout", name);
+      toast.success(`Instância "${name}" desconectada`);
+      setConnectionStates(prev => ({ ...prev, [name]: "close" }));
+    } catch (e: any) { toast.error(e.message); }
+    finally { setLoggingOut(null); }
+  };
+
+  const connectInstance = async (name: string) => {
+    try {
+      const result = await callEvolution("instanceInfo", name);
+      if (result.base64 || result.qrcode?.base64) {
+        const qr = result.base64 || result.qrcode.base64;
+        setQrCodeData(prev => ({ ...prev, [name]: qr }));
+        setShowQrFor(name);
+        toast.info("Escaneie o QR Code com seu WhatsApp");
+      } else if (result.instance?.state === "open") {
+        toast.success("Instância já conectada!");
+        setConnectionStates(prev => ({ ...prev, [name]: "open" }));
+      } else {
+        toast.info("Nenhum QR Code disponível. Tente reiniciar a instância.");
+      }
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const copyWebhookUrl = () => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook`;
+    navigator.clipboard.writeText(url);
+    toast.success("URL copiada!");
+  };
+
   return (
     <div className="space-y-6">
       <div>

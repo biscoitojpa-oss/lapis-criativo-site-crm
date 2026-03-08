@@ -90,7 +90,8 @@ const ContratoForm = () => {
     ? valorTotal / parseInt(form.duracao_meses) : 0;
 
   const handleSave = async () => {
-    if (!form.cliente_id || !form.titulo) { toast.error("Preencha cliente e título"); return; }
+    if (!form.cliente_id) { toast.error("Selecione um cliente cadastrado antes de criar o contrato"); return; }
+    if (!form.titulo) { toast.error("Preencha o título"); return; }
     if (itens.length === 0) { toast.error("Adicione pelo menos um item"); return; }
     setSaving(true);
 

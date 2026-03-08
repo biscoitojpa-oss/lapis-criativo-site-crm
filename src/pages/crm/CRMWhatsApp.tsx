@@ -4,6 +4,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Zap, Calendar, Timer,
   Activity, BarChart3, Wifi, WifiOff, Heart, Play, Plus, Trash2,
   Power, LogOut, QrCode, Settings, Copy, MessageCircle, Search, Phone,
+  CalendarClock,
 } from "lucide-react";
 import WhatsAppChat from "@/components/WhatsAppChat";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,11 @@ interface AntiBanConfig {
   msgs_antes_descanso: number;
   descanso_min: number;
   descanso_max: number;
+  followup_dias_inatividade: number;
+  followup_max_tentativas: number;
+  followup_horario_inicio: string;
+  followup_horario_fim: string;
+  followup_ativo: boolean;
 }
 
 const CRMWhatsApp = () => {
@@ -917,6 +923,59 @@ const CRMWhatsApp = () => {
                     <div><p className="text-xs text-primary mb-1">Descanso após</p><p className="font-semibold text-sm">{config.msgs_antes_descanso} msgs</p></div>
                     <div><p className="text-xs text-primary mb-1">Tempo descanso</p><p className="font-semibold text-sm">{config.descanso_min}-{config.descanso_max}min</p></div>
                     <div><p className="text-xs text-primary mb-1">Horário</p><p className="font-semibold text-sm">{config.horario_inicio}-{config.horario_fim}</p></div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Follow-up Automático Config */}
+              <Card className="bg-card/50 border-border/50">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2"><CalendarClock className="w-4 h-4 text-primary" />Follow-up Automático</CardTitle>
+                      <CardDescription>Configurações de reengajamento automático por inatividade</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Ativo</Label>
+                      <button
+                        onClick={() => setConfig({ ...config, followup_ativo: !config.followup_ativo })}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${config.followup_ativo ? "bg-primary" : "bg-muted"}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${config.followup_ativo ? "left-5" : "left-0.5"}`} />
+                      </button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Dias de inatividade para disparar</Label>
+                      <Input type="number" min={1} max={30} value={config.followup_dias_inatividade} onChange={e => setConfig({ ...config, followup_dias_inatividade: Number(e.target.value) })} className="bg-background/50 border-border/50" />
+                      <p className="text-xs text-muted-foreground mt-1">Após X dias sem resposta do cliente</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Máximo de tentativas</Label>
+                      <Input type="number" min={1} max={10} value={config.followup_max_tentativas} onChange={e => setConfig({ ...config, followup_max_tentativas: Number(e.target.value) })} className="bg-background/50 border-border/50" />
+                      <p className="text-xs text-muted-foreground mt-1">Quantidade máxima de follow-ups por contato</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Horário de Envio dos Follow-ups</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Início</Label>
+                        <Input type="time" value={config.followup_horario_inicio} onChange={e => setConfig({ ...config, followup_horario_inicio: e.target.value })} className="bg-background/50 border-border/50" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Fim</Label>
+                        <Input type="time" value={config.followup_horario_fim} onChange={e => setConfig({ ...config, followup_horario_fim: e.target.value })} className="bg-background/50 border-border/50" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <p className="text-xs text-muted-foreground">
+                      📋 <strong>Resumo:</strong> Após <strong>{config.followup_dias_inatividade} dias</strong> sem resposta, o sistema envia até <strong>{config.followup_max_tentativas} follow-ups</strong> automáticos (1 a cada {config.followup_dias_inatividade} dias) entre <strong>{config.followup_horario_inicio}</strong> e <strong>{config.followup_horario_fim}</strong>. Se o cliente responder, os follow-ups pendentes são cancelados automaticamente.
+                    </p>
                   </div>
                 </CardContent>
               </Card>

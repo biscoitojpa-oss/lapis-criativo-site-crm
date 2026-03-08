@@ -6,8 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_AUTO_FOLLOWUPS = 3;
-const INACTIVITY_DAYS = 2;
+// These are defaults; overridden by whatsapp_config if available
+let MAX_AUTO_FOLLOWUPS = 3;
+let INACTIVITY_DAYS = 2;
+let FOLLOWUP_HOUR_START = 10;
+let FOLLOWUP_HOUR_END = 19;
+let FOLLOWUP_ATIVO = true;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,7 +34,28 @@ serve(async (req) => {
     const now = new Date();
     const nowISO = now.toISOString();
 
-    // ============================
+    // Load follow-up config from DB
+    const { data: configRow } = await supabase
+      .from("whatsapp_config")
+      .select("followup_dias_inatividade, followup_max_tentativas, followup_horario_inicio, followup_horario_fim, followup_ativo")
+      .limit(1)
+      .maybeSingle();
+
+    if (configRow) {
+      INACTIVITY_DAYS = configRow.followup_dias_inatividade ?? INACTIVITY_DAYS;
+      MAX_AUTO_FOLLOWUPS = configRow.followup_max_tentativas ?? MAX_AUTO_FOLLOWUPS;
+      FOLLOWUP_ATIVO = configRow.followup_ativo ?? true;
+      const startParts = (configRow.followup_horario_inicio || "10:00").split(":");
+      const endParts = (configRow.followup_horario_fim || "19:00").split(":");
+      FOLLOWUP_HOUR_START = parseInt(startParts[0]) || 10;
+      FOLLOWUP_HOUR_END = parseInt(endParts[0]) || 19;
+    }
+
+    if (!FOLLOWUP_ATIVO) {
+      return new Response(JSON.stringify({ ok: true, message: "Follow-up automático desativado", processed: 0, errors: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     // STEP 1: Detect inactive conversations and create auto follow-ups
     // ============================
     const twoDaysAgo = new Date(now.getTime() - INACTIVITY_DAYS * 24 * 60 * 60 * 1000);
@@ -187,12 +212,12 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
           }
         }
 
-        // Schedule for next business morning at 10:00
+        // Schedule using configurable hours
         const scheduleDate = new Date(now.getTime() + 2 * 60 * 60 * 1000); // minimum 2h from now
-        if (scheduleDate.getHours() < 10) scheduleDate.setHours(10, 0, 0, 0);
-        if (scheduleDate.getHours() > 19) {
+        if (scheduleDate.getHours() < FOLLOWUP_HOUR_START) scheduleDate.setHours(FOLLOWUP_HOUR_START, 0, 0, 0);
+        if (scheduleDate.getHours() > FOLLOWUP_HOUR_END) {
           scheduleDate.setDate(scheduleDate.getDate() + 1);
-          scheduleDate.setHours(10, 0, 0, 0);
+          scheduleDate.setHours(FOLLOWUP_HOUR_START, 0, 0, 0);
         }
 
         await supabase.from("whatsapp_followups").insert({

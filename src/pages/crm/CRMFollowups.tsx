@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText, TrendingUp, Users, Ban, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +105,28 @@ const CRMFollowups = () => {
     erro: followups.filter(f => f.status === "erro").length,
     cancelado: followups.filter(f => f.status === "cancelado").length,
   };
+
+  const autoMetrics = useMemo(() => {
+    const autoFollowups = followups.filter(f => f.origem === "auto");
+    const totalAuto = autoFollowups.length;
+    const enviados = autoFollowups.filter(f => f.status === "enviado").length;
+    // "cancelado" with error containing "respondeu" means client replied
+    const respondidos = autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).length;
+    
+    // Desistidos: phones that received max follow-ups (3+) and never responded
+    const phonesSent = new Map<string, number>();
+    for (const f of autoFollowups) {
+      if (f.status === "enviado") {
+        phonesSent.set(f.telefone, (phonesSent.get(f.telefone) || 0) + 1);
+      }
+    }
+    const phonesRespondidos = new Set(autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).map(f => f.telefone));
+    const desistidos = Array.from(phonesSent.entries()).filter(([phone, count]) => count >= 3 && !phonesRespondidos.has(phone)).length;
+    
+    const taxaResposta = enviados > 0 ? Math.round((respondidos / enviados) * 100) : 0;
+    
+    return { totalAuto, enviados, respondidos, desistidos, taxaResposta };
+  }, [followups]);
 
   const addFollowup = async () => {
     if (!newPhone.trim() || !newMessage.trim() || !newDate) {
@@ -292,6 +314,47 @@ const CRMFollowups = () => {
           <p className="text-xs text-muted-foreground">Cancelados</p>
         </CardContent></Card>
       </div>
+
+      {/* Metrics Panel - Auto Follow-ups */}
+      {autoMetrics.totalAuto > 0 && (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Métricas de Follow-ups Automáticos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <MessageSquare className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-xl font-bold">{autoMetrics.totalAuto}</p>
+                <p className="text-xs text-muted-foreground">Total criados</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Send className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-emerald-400">{autoMetrics.enviados}</p>
+                <p className="text-xs text-muted-foreground">Enviados</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-blue-400">{autoMetrics.respondidos}</p>
+                <p className="text-xs text-muted-foreground">Respondidos (cancelados)</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <TrendingUp className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-amber-400">{autoMetrics.taxaResposta}%</p>
+                <p className="text-xs text-muted-foreground">Taxa de resposta</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/20 border border-border/30">
+                <Ban className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                <p className="text-xl font-bold text-muted-foreground">{autoMetrics.desistidos}</p>
+                <p className="text-xs text-muted-foreground">Desistidos (3+ sem resposta)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* List */}
       <Card className="glass-card">

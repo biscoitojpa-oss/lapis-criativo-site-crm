@@ -112,17 +112,24 @@ const CRMWhatsApp = () => {
     return resp.json();
   };
 
+  // Instâncias que não devem aparecer no CRM
+  const HIDDEN_INSTANCES = ["Daher", "daher"];
+
   const fetchInstances = useCallback(async () => {
     setLoadingInstances(true);
     try {
       const result = await callEvolution("fetchInstances");
-      const list = Array.isArray(result) ? result : [];
+      const raw = Array.isArray(result) ? result : [];
+      // Filtra instâncias ocultas
+      const list = raw.filter((inst: any) => {
+        const n = inst.name || inst.instance?.instanceName || inst.instanceName || "";
+        return !HIDDEN_INSTANCES.some(h => n.toLowerCase() === h.toLowerCase());
+      });
       setInstances(list);
       const states: Record<string, string> = {};
       for (const inst of list) {
         const name = inst.name || inst.instance?.instanceName || inst.instanceName;
         if (name) {
-          // Use connectionStatus from fetchInstances response directly
           const status = inst.connectionStatus || inst.instance?.state;
           if (status) {
             states[name] = status;

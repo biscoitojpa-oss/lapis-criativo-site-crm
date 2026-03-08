@@ -3,6 +3,7 @@ import {
   MessageSquare, Users, Clock, Shield, Send, Radio, RefreshCw,
   CheckCircle2, XCircle, AlertTriangle, Zap, Calendar, Timer,
   Activity, BarChart3, Wifi, WifiOff, Heart, Play, Plus, Trash2,
+  Power, LogOut, QrCode, Settings, Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

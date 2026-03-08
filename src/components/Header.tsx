@@ -21,9 +21,6 @@ const Header = () => {
           {/* Logo */}
           <a href="#" className="flex items-center gap-2 group">
             <img src={logoImg} alt="Lápis Criativo" className="w-20 h-20 object-contain" />
-            <span className="font-display font-bold text-xl">
-              Lápis <span className="neon-text">Criativo</span>
-            </span>
           </a>
 
           {/* Desktop Navigation */}

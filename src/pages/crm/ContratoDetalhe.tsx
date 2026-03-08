@@ -90,6 +90,13 @@ const ContratoDetalhe = () => {
             <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4" /> Baixar PDF
             </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const url = `${window.location.origin}/assinar/${contrato.token_assinatura}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link de assinatura copiado!");
+            }}>
+              <Link2 className="w-4 h-4" /> Link de Assinatura
+            </Button>
             {contrato.status === "ativo" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => updateStatus("suspenso")} className="text-yellow-500">Suspender</Button>

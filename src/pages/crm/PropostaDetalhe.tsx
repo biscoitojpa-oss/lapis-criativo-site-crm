@@ -22,6 +22,7 @@ const PropostaDetalhe = () => {
   const [itens, setItens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [configPag, setConfigPag] = useState<any>(null);
 
   useEffect(() => {
     if (!propostaId) return;

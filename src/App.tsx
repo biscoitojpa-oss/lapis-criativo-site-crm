@@ -63,6 +63,7 @@ const App = () => (
               <Route path="buscador-leads" element={<CRMBuscadorLeads />} />
               <Route path="whatsapp" element={<CRMWhatsApp />} />
               <Route path="pagamentos" element={<CRMPagamentos />} />
+              <Route path="followups" element={<CRMFollowups />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

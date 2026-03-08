@@ -31,6 +31,7 @@ const cadastroItems = [
 const agentItems = [
   { title: "Criativo X", url: "/crm/criativo-x", icon: Bot },
   { title: "WhatsApp", url: "/crm/whatsapp", icon: MessageCircle },
+  { title: "Follow-ups", url: "/crm/followups", icon: CalendarClock },
   { title: "Buscador de Leads", url: "/crm/buscador-leads", icon: Crosshair },
 ];
 

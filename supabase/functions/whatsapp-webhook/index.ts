@@ -401,7 +401,36 @@ FLUXO DE HANDOFF:
     }
 
     const aiData = await aiResponse.json();
-    const fullReply = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem. Vou encaminhar para nossa equipe! 🙏";
+    let fullReply = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem. Vou encaminhar para nossa equipe! 🙏";
+
+    // Check if AI detected follow-up decline
+    const followupDeclined = fullReply.includes("[FOLLOWUP_DECLINED]");
+    if (followupDeclined) {
+      // Remove the tag from the reply
+      fullReply = fullReply.replace("[FOLLOWUP_DECLINED]", "").trim();
+
+      // Schedule a follow-up for 24h later
+      const followupDate = new Date();
+      followupDate.setHours(followupDate.getHours() + 24);
+      // Adjust to business hours (10:00)
+      if (followupDate.getHours() < 10) followupDate.setHours(10, 0, 0, 0);
+      if (followupDate.getHours() > 19) {
+        followupDate.setDate(followupDate.getDate() + 1);
+        followupDate.setHours(10, 0, 0, 0);
+      }
+
+      await supabase.from("whatsapp_followups").insert({
+        telefone: phone,
+        nome_contato: pushName,
+        mensagem: `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Se quiser saber mais sobre nossos serviços de marketing digital, é só me chamar! Estou por aqui. 🚀`,
+        motivo: "remarketing",
+        instancia: instanceName,
+        agendado_para: followupDate.toISOString(),
+        origem: "auto",
+      });
+
+      console.log(`Follow-up agendado para ${phone} em ${followupDate.toISOString()}`);
+    }
 
     // Split reply into human-like separate messages
     const messageChunks = splitMessage(fullReply);

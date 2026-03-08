@@ -12,10 +12,8 @@ const BRAND = {
 function addHeader(doc: jsPDF, title: string, numero: number) {
   doc.setFillColor(...BRAND.darkColor);
   doc.rect(0, 0, 210, 40, "F");
-
   doc.setFillColor(...BRAND.primaryColor);
   doc.rect(0, 38, 210, 3, "F");
-
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
@@ -23,11 +21,9 @@ function addHeader(doc: jsPDF, title: string, numero: number) {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(BRAND.tagline, 20, 28);
-
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.text(`${title} #${numero}`, 190, 20, { align: "right" });
-
   doc.setTextColor(...BRAND.darkColor);
 }
 
@@ -57,35 +53,25 @@ function addSection(doc: jsPDF, y: number, label: string, value: string) {
 }
 
 function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
-  if (y + needed > 275) {
-    doc.addPage();
-    return 20;
-  }
+  if (y + needed > 275) { doc.addPage(); return 20; }
   return y;
 }
 
-const complexidadeLabel: Record<string, string> = {
-  baixo: "Baixo",
-  medio: "Médio",
-  alto: "Alto",
-};
+const complexidadeLabel: Record<string, string> = { baixo: "Baixo", medio: "Médio", alto: "Alto" };
 
 export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
   const doc = new jsPDF();
   addHeader(doc, "Proposta", proposta.numero);
-
   let y = 55;
 
   // Client info
   doc.setFillColor(245, 243, 255);
   doc.roundedRect(15, y - 5, 180, 40, 3, 3, "F");
-
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND.primaryColor);
   doc.text("Dados do Cliente", 20, y + 3);
   y += 12;
-
   y = addSection(doc, y, "Cliente:", cliente?.nome || "—");
   if (cliente?.empresa) y = addSection(doc, y, "Empresa:", cliente.empresa);
   if (cliente?.email) y = addSection(doc, y, "Email:", cliente.email);
@@ -98,7 +84,6 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
   doc.setTextColor(...BRAND.primaryColor);
   doc.text("Detalhes da Proposta", 20, y);
   y += 8;
-
   y = addSection(doc, y, "Título:", proposta.titulo);
   y = addSection(doc, y, "Validade:", `${proposta.validade_dias} dias`);
   y = addSection(doc, y, "Data:", new Date(proposta.criado_em).toLocaleDateString("pt-BR"));
@@ -117,7 +102,66 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
   }
   y += 8;
 
+  // Serviços Contratados section
+  const servicosComDetalhes = itens.filter((item) => item.servicos);
+  if (servicosComDetalhes.length > 0) {
+    y = checkPageBreak(doc, y, 20);
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, y - 4, 180, 10, 2, 2, "F");
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("SERVIÇOS CONTRATADOS", 20, y + 3);
+    y += 14;
+
+    for (const item of servicosComDetalhes) {
+      const s = item.servicos;
+      const entregaveis = s.entregaveis ? s.entregaveis.split("\n").filter((e: string) => e.trim()) : [];
+      const neededH = 30 + entregaveis.length * 5;
+      y = checkPageBreak(doc, y, neededH);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...BRAND.darkColor);
+      doc.text(`• ${s.nome}`, 22, y);
+      y += 6;
+
+      if (s.descricao) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...BRAND.grayColor);
+        const descLines = doc.splitTextToSize(s.descricao, 160);
+        doc.text(descLines, 26, y);
+        y += descLines.length * 4 + 2;
+      }
+
+      if (s.prazo_entrega) y = addSection(doc, y, "  Prazo:", `${s.prazo_entrega} dias`);
+      if (s.nivel_complexidade) y = addSection(doc, y, "  Complexidade:", complexidadeLabel[s.nivel_complexidade] || s.nivel_complexidade);
+
+      const implVal = Number(s.valor_implantacao || 0);
+      const mensVal = Number(s.valor_mensal || 0);
+      if (implVal > 0) y = addSection(doc, y, "  Implantação:", `R$ ${implVal.toFixed(2)}`);
+      if (mensVal > 0) y = addSection(doc, y, "  Mensal:", `R$ ${mensVal.toFixed(2)}`);
+
+      if (entregaveis.length > 0) {
+        doc.setTextColor(...BRAND.grayColor);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("  Entregáveis:", 22, y);
+        y += 5;
+        doc.setTextColor(...BRAND.darkColor);
+        for (const ent of entregaveis) {
+          y = checkPageBreak(doc, y, 6);
+          doc.text(`    → ${ent.trim()}`, 24, y);
+          y += 5;
+        }
+      }
+      y += 5;
+    }
+  }
+
   // Items table
+  y = checkPageBreak(doc, y, 30);
   autoTable(doc, {
     startY: y,
     head: [["Descrição", "Qtd", "Valor Unit.", "Total"]],
@@ -132,62 +176,29 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
     headStyles: { fillColor: BRAND.primaryColor, textColor: [255, 255, 255], fontStyle: "bold" },
     footStyles: { fillColor: [245, 243, 255], textColor: BRAND.darkColor, fontStyle: "bold", fontSize: 11 },
     styles: { fontSize: 9, cellPadding: 4 },
-    columnStyles: {
-      0: { cellWidth: 85 },
-      1: { halign: "center", cellWidth: 20 },
-      2: { halign: "right", cellWidth: 35 },
-      3: { halign: "right", cellWidth: 35 },
-    },
+    columnStyles: { 0: { cellWidth: 85 }, 1: { halign: "center", cellWidth: 20 }, 2: { halign: "right", cellWidth: 35 }, 3: { halign: "right", cellWidth: 35 } },
     margin: { left: 15, right: 15 },
   });
 
   let finalY = (doc as any).lastAutoTable?.finalY || y + 50;
   finalY += 10;
 
-  // Service details from itens (prazo, complexidade, entregáveis)
-  const servicosComDetalhes = itens.filter((item) => item.servicos);
-  if (servicosComDetalhes.length > 0) {
+  // Financial summary
+  const totalImpl = servicosComDetalhes.reduce((s, i) => s + Number(i.servicos?.valor_implantacao || 0), 0);
+  const totalMens = servicosComDetalhes.reduce((s, i) => s + Number(i.servicos?.valor_mensal || 0), 0);
+  if (totalImpl > 0 || totalMens > 0) {
     finalY = checkPageBreak(doc, finalY, 40);
-
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...BRAND.primaryColor);
-    doc.text("Detalhes dos Serviços", 20, finalY);
-    finalY += 8;
-
-    for (const item of servicosComDetalhes) {
-      const s = item.servicos;
-      const neededHeight = 20 + (s.entregaveis ? s.entregaveis.split("\n").length * 5 : 0);
-      finalY = checkPageBreak(doc, finalY, neededHeight);
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...BRAND.darkColor);
-      doc.text(`• ${s.nome}`, 22, finalY);
-      finalY += 6;
-
-      if (s.prazo_entrega) {
-        finalY = addSection(doc, finalY, "  Prazo:", `${s.prazo_entrega} dias`);
-      }
-      if (s.nivel_complexidade) {
-        finalY = addSection(doc, finalY, "  Complexidade:", complexidadeLabel[s.nivel_complexidade] || s.nivel_complexidade);
-      }
-      if (s.entregaveis) {
-        doc.setTextColor(...BRAND.grayColor);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text("  Entregáveis:", 22, finalY);
-        finalY += 5;
-        const entregaveis = s.entregaveis.split("\n").filter((e: string) => e.trim());
-        doc.setTextColor(...BRAND.darkColor);
-        for (const ent of entregaveis) {
-          finalY = checkPageBreak(doc, finalY, 6);
-          doc.text(`    → ${ent.trim()}`, 24, finalY);
-          finalY += 5;
-        }
-      }
-      finalY += 4;
-    }
+    doc.text("RESUMO FINANCEIRO", 20, finalY + 3);
+    finalY += 14;
+    if (totalImpl > 0) finalY = addSection(doc, finalY, "Implantação:", `R$ ${totalImpl.toFixed(2)}`);
+    if (totalMens > 0) finalY = addSection(doc, finalY, "Mensalidade:", `R$ ${totalMens.toFixed(2)}`);
+    finalY = addSection(doc, finalY, "Total Geral:", `R$ ${Number(proposta.valor_total).toFixed(2)}`);
+    finalY += 5;
   }
 
   if (proposta.observacoes) {
@@ -205,19 +216,16 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
 export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
   const doc = new jsPDF();
   addHeader(doc, "Contrato", contrato.numero);
-
   let y = 55;
 
   // Client info
   doc.setFillColor(245, 243, 255);
   doc.roundedRect(15, y - 5, 180, 45, 3, 3, "F");
-
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND.primaryColor);
   doc.text("Contratante", 20, y + 3);
   y += 12;
-
   y = addSection(doc, y, "Cliente:", cliente?.nome || "—");
   if (cliente?.empresa) y = addSection(doc, y, "Empresa:", cliente.empresa);
   if (cliente?.cnpj_cpf) y = addSection(doc, y, "CNPJ/CPF:", cliente.cnpj_cpf);
@@ -230,7 +238,6 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
   doc.setTextColor(...BRAND.primaryColor);
   doc.text("Detalhes do Contrato", 20, y);
   y += 8;
-
   y = addSection(doc, y, "Título:", contrato.titulo);
   y = addSection(doc, y, "Tipo:", contrato.tipo_pagamento === "mensal" ? "Pagamento Mensal" : "Pagamento Único");
   y = addSection(doc, y, "Valor Total:", `R$ ${Number(contrato.valor_total).toFixed(2)}`);
@@ -247,48 +254,39 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
     startY: y,
     head: [["Descrição", "Qtd", "Valor Unit.", "Total"]],
     body: itens.map((item) => [
-      item.descricao,
-      String(item.quantidade),
-      `R$ ${Number(item.valor_unitario).toFixed(2)}`,
-      `R$ ${Number(item.valor_total).toFixed(2)}`,
+      item.descricao, String(item.quantidade),
+      `R$ ${Number(item.valor_unitario).toFixed(2)}`, `R$ ${Number(item.valor_total).toFixed(2)}`,
     ]),
     foot: [["", "", "TOTAL", `R$ ${Number(contrato.valor_total).toFixed(2)}`]],
     theme: "grid",
     headStyles: { fillColor: BRAND.primaryColor, textColor: [255, 255, 255], fontStyle: "bold" },
     footStyles: { fillColor: [245, 243, 255], textColor: BRAND.darkColor, fontStyle: "bold", fontSize: 11 },
     styles: { fontSize: 9, cellPadding: 4 },
-    columnStyles: {
-      0: { cellWidth: 85 },
-      1: { halign: "center", cellWidth: 20 },
-      2: { halign: "right", cellWidth: 35 },
-      3: { halign: "right", cellWidth: 35 },
-    },
+    columnStyles: { 0: { cellWidth: 85 }, 1: { halign: "center", cellWidth: 20 }, 2: { halign: "right", cellWidth: 35 }, 3: { halign: "right", cellWidth: 35 } },
     margin: { left: 15, right: 15 },
   });
 
   let finalY = (doc as any).lastAutoTable?.finalY || y + 50;
   finalY += 10;
 
-  // ESCOPO DO SERVIÇO section
+  // CLÁUSULA DE SERVIÇOS
   const servicosComDetalhes = itens.filter((item) => item.servicos);
   if (servicosComDetalhes.length > 0) {
     finalY = checkPageBreak(doc, finalY, 30);
-
     doc.setFillColor(245, 243, 255);
-    doc.roundedRect(15, finalY - 5, 180, 10, 2, 2, "F");
+    doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...BRAND.primaryColor);
-    doc.text("ESCOPO DO SERVIÇO", 20, finalY + 2);
-    finalY += 12;
+    doc.text("CLÁUSULA DE SERVIÇOS", 20, finalY + 3);
+    finalY += 14;
 
     let hasReuniao = false;
-
     for (const item of servicosComDetalhes) {
       const s = item.servicos;
-      const entregaveisLines = s.entregaveis ? s.entregaveis.split("\n").filter((e: string) => e.trim()) : [];
-      const neededHeight = 20 + entregaveisLines.length * 5;
-      finalY = checkPageBreak(doc, finalY, neededHeight);
+      const entregaveis = s.entregaveis ? s.entregaveis.split("\n").filter((e: string) => e.trim()) : [];
+      const neededH = 20 + entregaveis.length * 5;
+      finalY = checkPageBreak(doc, finalY, neededH);
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
@@ -296,29 +294,33 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
       doc.text(`• ${s.nome}`, 22, finalY);
       finalY += 6;
 
-      if (s.prazo_entrega) {
-        finalY = addSection(doc, finalY, "  Prazo de Entrega:", `${s.prazo_entrega} dias`);
+      if (s.descricao) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...BRAND.grayColor);
+        const dLines = doc.splitTextToSize(s.descricao, 160);
+        doc.text(dLines, 26, finalY);
+        finalY += dLines.length * 4 + 2;
       }
-
-      if (entregaveisLines.length > 0) {
+      if (s.prazo_entrega) finalY = addSection(doc, finalY, "  Prazo:", `${s.prazo_entrega} dias`);
+      if (entregaveis.length > 0) {
         doc.setTextColor(...BRAND.grayColor);
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("  Entregáveis:", 22, finalY);
         finalY += 5;
         doc.setTextColor(...BRAND.darkColor);
-        for (const ent of entregaveisLines) {
+        for (const ent of entregaveis) {
           finalY = checkPageBreak(doc, finalY, 6);
           doc.text(`    → ${ent.trim()}`, 24, finalY);
           finalY += 5;
         }
       }
-
       if (s.requer_reuniao) hasReuniao = true;
       finalY += 4;
     }
 
-    // Cláusula de reunião
+    // Reunião clause
     if (hasReuniao) {
       finalY = checkPageBreak(doc, finalY, 15);
       finalY += 4;
@@ -328,7 +330,26 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
       doc.setFont("helvetica", "bolditalic");
       doc.setTextColor(140, 100, 20);
       doc.text("O projeto terá início após reunião inicial de alinhamento entre as partes.", 20, finalY + 3);
+      finalY += 16;
+    }
+
+    // CLÁUSULA DE PAGAMENTO
+    const totalImpl = servicosComDetalhes.reduce((s, i) => s + Number(i.servicos?.valor_implantacao || 0), 0);
+    const totalMens = servicosComDetalhes.reduce((s, i) => s + Number(i.servicos?.valor_mensal || 0), 0);
+    if (totalImpl > 0 || totalMens > 0) {
+      finalY = checkPageBreak(doc, finalY, 40);
+      doc.setFillColor(245, 243, 255);
+      doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...BRAND.primaryColor);
+      doc.text("CLÁUSULA DE PAGAMENTO", 20, finalY + 3);
       finalY += 14;
+      if (totalImpl > 0) finalY = addSection(doc, finalY, "Implantação:", `R$ ${totalImpl.toFixed(2)}`);
+      if (totalMens > 0) finalY = addSection(doc, finalY, "Mensal recorrente:", `R$ ${totalMens.toFixed(2)}`);
+      finalY = addSection(doc, finalY, "Forma:", contrato.tipo_pagamento === "mensal" ? "Pagamento Mensal Recorrente" : "Pagamento Único");
+      finalY = addSection(doc, finalY, "Total:", `R$ ${Number(contrato.valor_total).toFixed(2)}`);
+      finalY += 5;
     }
   }
 

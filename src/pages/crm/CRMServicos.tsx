@@ -15,6 +15,9 @@ interface Servico {
   nome: string;
   descricao: string | null;
   valor_padrao: number;
+  valor_implantacao: number;
+  valor_mensal: number;
+  valor_anual: number;
   tipo_cobranca: string;
   ativo: boolean;
   prazo_entrega: number | null;
@@ -25,14 +28,8 @@ interface Servico {
 }
 
 const CATEGORIAS = [
-  "Design Gráfico",
-  "Marketing Digital",
-  "Desenvolvimento Web",
-  "Tráfego Pago",
-  "Google Meu Negócio",
-  "SEO",
-  "Redes Sociais",
-  "Analytics",
+  "Design Gráfico", "Marketing Digital", "Desenvolvimento Web",
+  "Tráfego Pago", "Google Meu Negócio", "SEO", "Redes Sociais", "Analytics",
 ];
 
 const complexidadeColors: Record<string, string> = {
@@ -47,15 +44,9 @@ const CRMServicos = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Servico | null>(null);
   const [form, setForm] = useState({
-    nome: "",
-    descricao: "",
-    valor_padrao: "",
-    tipo_cobranca: "mensal",
-    prazo_entrega: "",
-    nivel_complexidade: "medio",
-    requer_reuniao: false,
-    entregaveis: "",
-    categoria: "",
+    nome: "", descricao: "", valor_implantacao: "", valor_mensal: "", valor_anual: "",
+    tipo_cobranca: "mensal", prazo_entrega: "", nivel_complexidade: "medio",
+    requer_reuniao: false, entregaveis: "", categoria: "",
   });
 
   const load = async () => {
@@ -71,7 +62,10 @@ const CRMServicos = () => {
     const payload = {
       nome: form.nome,
       descricao: form.descricao || null,
-      valor_padrao: parseFloat(form.valor_padrao) || 0,
+      valor_implantacao: parseFloat(form.valor_implantacao) || 0,
+      valor_mensal: parseFloat(form.valor_mensal) || 0,
+      valor_anual: parseFloat(form.valor_anual) || 0,
+      valor_padrao: parseFloat(form.valor_mensal) || parseFloat(form.valor_implantacao) || 0,
       tipo_cobranca: form.tipo_cobranca,
       prazo_entrega: form.prazo_entrega ? parseInt(form.prazo_entrega) : null,
       nivel_complexidade: form.nivel_complexidade,
@@ -94,23 +88,23 @@ const CRMServicos = () => {
   };
 
   const resetForm = () => setForm({
-    nome: "", descricao: "", valor_padrao: "", tipo_cobranca: "mensal",
-    prazo_entrega: "", nivel_complexidade: "medio", requer_reuniao: false,
-    entregaveis: "", categoria: "",
+    nome: "", descricao: "", valor_implantacao: "", valor_mensal: "", valor_anual: "",
+    tipo_cobranca: "mensal", prazo_entrega: "", nivel_complexidade: "medio",
+    requer_reuniao: false, entregaveis: "", categoria: "",
   });
 
   const handleEdit = (s: Servico) => {
     setEditing(s);
     setForm({
-      nome: s.nome,
-      descricao: s.descricao || "",
-      valor_padrao: String(s.valor_padrao),
+      nome: s.nome, descricao: s.descricao || "",
+      valor_implantacao: String(s.valor_implantacao || 0),
+      valor_mensal: String(s.valor_mensal || 0),
+      valor_anual: String(s.valor_anual || 0),
       tipo_cobranca: s.tipo_cobranca,
       prazo_entrega: s.prazo_entrega ? String(s.prazo_entrega) : "",
       nivel_complexidade: s.nivel_complexidade || "medio",
       requer_reuniao: s.requer_reuniao ?? false,
-      entregaveis: s.entregaveis || "",
-      categoria: s.categoria || "",
+      entregaveis: s.entregaveis || "", categoria: s.categoria || "",
     });
     setDialogOpen(true);
   };
@@ -122,11 +116,7 @@ const CRMServicos = () => {
     load();
   };
 
-  const openNew = () => {
-    setEditing(null);
-    resetForm();
-    setDialogOpen(true);
-  };
+  const openNew = () => { setEditing(null); resetForm(); setDialogOpen(true); };
 
   return (
     <div className="space-y-6">
@@ -139,7 +129,7 @@ const CRMServicos = () => {
           <DialogTrigger asChild>
             <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4" /> Novo Serviço</Button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogContent className="bg-card border-border max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? "Editar Serviço" : "Novo Serviço"}</DialogTitle>
             </DialogHeader>
@@ -155,19 +145,35 @@ const CRMServicos = () => {
                   <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descreva o serviço..." className="bg-background/50" rows={3} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Valor Padrão (R$)</label>
-                  <Input type="number" value={form.valor_padrao} onChange={(e) => setForm({ ...form, valor_padrao: e.target.value })} placeholder="0.00" className="bg-background/50" />
+                  <label className="block text-sm font-medium mb-1">Categoria</label>
+                  <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} className="w-full h-10 rounded-lg bg-background/50 border border-border/50 px-3 text-sm">
+                    <option value="">Selecione...</option>
+                    {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Tipo de Cobrança</label>
                   <select value={form.tipo_cobranca} onChange={(e) => setForm({ ...form, tipo_cobranca: e.target.value })} className="w-full h-10 rounded-lg bg-background/50 border border-border/50 px-3 text-sm">
                     <option value="mensal">Mensal</option>
-                    <option value="unico">Único</option>
-                    <option value="por_projeto">Por Projeto</option>
+                    <option value="unico">Único / Projeto</option>
+                    <option value="anual">Anual</option>
                   </select>
                 </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Implantação (R$)</label>
+                    <Input type="number" step="0.01" value={form.valor_implantacao} onChange={(e) => setForm({ ...form, valor_implantacao: e.target.value })} placeholder="0.00" className="bg-background/50" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Mensal (R$)</label>
+                    <Input type="number" step="0.01" value={form.valor_mensal} onChange={(e) => setForm({ ...form, valor_mensal: e.target.value })} placeholder="0.00" className="bg-background/50" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Anual (R$)</label>
+                    <Input type="number" step="0.01" value={form.valor_anual} onChange={(e) => setForm({ ...form, valor_anual: e.target.value })} placeholder="0.00" className="bg-background/50" />
+                  </div>
+                </div>
               </div>
-
               {/* Col 2 */}
               <div className="space-y-4">
                 <div>
@@ -182,20 +188,13 @@ const CRMServicos = () => {
                     <option value="alto">Alto</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Categoria do Serviço</label>
-                  <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} className="w-full h-10 rounded-lg bg-background/50 border border-border/50 px-3 text-sm">
-                    <option value="">Selecione...</option>
-                    {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
                 <div className="flex items-center justify-between rounded-lg bg-background/50 border border-border/50 px-3 py-2.5">
                   <label className="text-sm font-medium">Requer Reunião Inicial</label>
                   <Switch checked={form.requer_reuniao} onCheckedChange={(v) => setForm({ ...form, requer_reuniao: v })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Entregáveis do Serviço</label>
-                  <Textarea value={form.entregaveis} onChange={(e) => setForm({ ...form, entregaveis: e.target.value })} placeholder={"Ex:\nCriação de layout\nEntrega de arquivos finais\nManual de uso da marca"} className="bg-background/50" rows={4} />
+                  <Textarea value={form.entregaveis} onChange={(e) => setForm({ ...form, entregaveis: e.target.value })} placeholder={"Ex:\nCriação de layout\nEntrega de arquivos finais\nManual de uso da marca"} className="bg-background/50" rows={6} />
                 </div>
               </div>
             </div>
@@ -219,9 +218,10 @@ const CRMServicos = () => {
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nome</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Categoria</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Tipo</th>
+                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Implantação</th>
+                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Mensal</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Prazo</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Complexidade</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Valor</th>
                 <th className="text-right py-3 px-4 font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -233,7 +233,9 @@ const CRMServicos = () => {
                   <td className="py-3 px-4">
                     <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs capitalize">{s.tipo_cobranca.replace("_", " ")}</span>
                   </td>
-                  <td className="py-3 px-4">{s.prazo_entrega ? `${s.prazo_entrega} dias` : "—"}</td>
+                  <td className="py-3 px-4 text-right">R$ {Number(s.valor_implantacao || 0).toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right">R$ {Number(s.valor_mensal || 0).toFixed(2)}</td>
+                  <td className="py-3 px-4">{s.prazo_entrega ? `${s.prazo_entrega}d` : "—"}</td>
                   <td className="py-3 px-4">
                     {s.nivel_complexidade ? (
                       <span className={`px-2 py-1 rounded-full text-xs capitalize ${complexidadeColors[s.nivel_complexidade] || ""}`}>
@@ -241,7 +243,6 @@ const CRMServicos = () => {
                       </span>
                     ) : "—"}
                   </td>
-                  <td className="py-3 px-4">R$ {Number(s.valor_padrao).toFixed(2)}</td>
                   <td className="py-3 px-4 text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(s)}><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>

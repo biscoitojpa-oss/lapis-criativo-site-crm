@@ -49,7 +49,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 
-  const HIDDEN_INSTANCES = ["daher"];
+  const HIDDEN_INSTANCES = ["daher", "leads"];
 
   // Fetch available instances
   useEffect(() => {

@@ -225,11 +225,27 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant={handoffActive ? "default" : "ghost"}
+            size="sm"
+            className={`h-8 text-xs ${handoffActive ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}`}
+            onClick={toggleHandoff}
+            title={handoffActive ? "Clique para reativar o bot" : "Clique para pausar o bot e atender manualmente"}
+          >
+            {handoffActive ? <><UserCheck className="w-3.5 h-3.5 mr-1" />Humano</> : <><Bot className="w-3.5 h-3.5 mr-1" />Bot</>}
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchMessages}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
+
+      {/* Handoff banner */}
+      {handoffActive && (
+        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-center">
+          <p className="text-xs text-amber-400">⚠️ Bot pausado — Atendimento humano ativo. Clique em "Humano" para reativar o bot.</p>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">

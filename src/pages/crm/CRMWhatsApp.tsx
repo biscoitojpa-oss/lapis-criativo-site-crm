@@ -64,6 +64,17 @@ const CRMWhatsApp = () => {
   const [testPhone, setTestPhone] = useState("");
   const [testMessage, setTestMessage] = useState("Mensagem de teste do CRM Lápis Criativo 🎨");
 
+  // Instance management
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newInstanceName, setNewInstanceName] = useState("");
+  const [newInstanceWebhook, setNewInstanceWebhook] = useState("");
+  const [creatingInstance, setCreatingInstance] = useState(false);
+  const [deletingInstance, setDeletingInstance] = useState<string | null>(null);
+  const [restartingInstance, setRestartingInstance] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState<string | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<Record<string, string>>({});
+  const [showQrFor, setShowQrFor] = useState<string | null>(null);
+
   // Metrics
   const [whatsappLeads, setWhatsappLeads] = useState(0);
   const [totalLeads, setTotalLeads] = useState(0);

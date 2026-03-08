@@ -574,10 +574,35 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_handoff: {
+        Row: {
+          ativado_em: string
+          ativo: boolean
+          desativado_em: string | null
+          id: string
+          telefone: string
+        }
+        Insert: {
+          ativado_em?: string
+          ativo?: boolean
+          desativado_em?: string | null
+          id?: string
+          telefone: string
+        }
+        Update: {
+          ativado_em?: string
+          ativo?: boolean
+          desativado_em?: string | null
+          id?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       whatsapp_mensagens: {
         Row: {
           criado_em: string
           direcao: string
+          humano_ativo: boolean
           id: string
           instancia: string
           mensagem: string
@@ -590,6 +615,7 @@ export type Database = {
         Insert: {
           criado_em?: string
           direcao?: string
+          humano_ativo?: boolean
           id?: string
           instancia?: string
           mensagem: string
@@ -602,6 +628,7 @@ export type Database = {
         Update: {
           criado_em?: string
           direcao?: string
+          humano_ativo?: boolean
           id?: string
           instancia?: string
           mensagem?: string

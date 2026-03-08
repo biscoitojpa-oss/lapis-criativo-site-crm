@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_AUTO_FOLLOWUPS = 3;
+const INACTIVITY_DAYS = 2;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -14,6 +17,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")!;
@@ -23,29 +27,235 @@ serve(async (req) => {
       throw new Error("Evolution API não configurada");
     }
 
-    // Fetch scheduled follow-ups that are due
-    const now = new Date().toISOString();
+    const now = new Date();
+    const nowISO = now.toISOString();
+
+    // ============================
+    // STEP 1: Detect inactive conversations and create auto follow-ups
+    // ============================
+    const twoDaysAgo = new Date(now.getTime() - INACTIVITY_DAYS * 24 * 60 * 60 * 1000);
+
+    // Get all phones with their last RECEIVED message (from client)
+    const { data: allMessages } = await supabase
+      .from("whatsapp_mensagens")
+      .select("telefone, nome_contato, criado_em, direcao, instancia")
+      .order("criado_em", { ascending: false })
+      .limit(1000);
+
+    if (allMessages) {
+      // Group by phone: find last message from client and last message overall
+      const phoneMap = new Map<string, {
+        lastClientMsg: string | null;
+        lastAnyMsg: string;
+        nome: string;
+        instancia: string;
+      }>();
+
+      for (const m of allMessages) {
+        if (!phoneMap.has(m.telefone)) {
+          phoneMap.set(m.telefone, {
+            lastClientMsg: m.direcao === "recebida" ? m.criado_em : null,
+            lastAnyMsg: m.criado_em,
+            nome: m.nome_contato || m.telefone,
+            instancia: m.instancia,
+          });
+        } else {
+          const existing = phoneMap.get(m.telefone)!;
+          if (!existing.lastClientMsg && m.direcao === "recebida") {
+            existing.lastClientMsg = m.criado_em;
+          }
+        }
+      }
+
+      let autoCreated = 0;
+
+      for (const [phone, info] of phoneMap) {
+        // Only consider contacts that have sent at least one message
+        if (!info.lastClientMsg) continue;
+
+        const lastClientDate = new Date(info.lastClientMsg);
+
+        // Check if last client message is older than 2 days
+        if (lastClientDate >= twoDaysAgo) continue;
+
+        // Check if handoff is active
+        const { data: handoff } = await supabase
+          .from("whatsapp_handoff")
+          .select("ativo")
+          .eq("telefone", phone)
+          .eq("ativo", true)
+          .maybeSingle();
+        if (handoff) continue;
+
+        // Count existing auto follow-ups for this phone (sent or scheduled)
+        const { count: existingCount } = await supabase
+          .from("whatsapp_followups")
+          .select("*", { count: "exact", head: true })
+          .eq("telefone", phone)
+          .eq("origem", "auto")
+          .in("status", ["agendado", "enviado"]);
+
+        if ((existingCount || 0) >= MAX_AUTO_FOLLOWUPS) continue;
+
+        // Check if we already have a pending follow-up scheduled
+        const { data: pendingFollowup } = await supabase
+          .from("whatsapp_followups")
+          .select("id")
+          .eq("telefone", phone)
+          .eq("status", "agendado")
+          .eq("origem", "auto")
+          .maybeSingle();
+        if (pendingFollowup) continue;
+
+        // Check if last follow-up sent was less than 2 days ago
+        const { data: lastSent } = await supabase
+          .from("whatsapp_followups")
+          .select("enviado_em")
+          .eq("telefone", phone)
+          .eq("origem", "auto")
+          .eq("status", "enviado")
+          .order("enviado_em", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastSent?.enviado_em) {
+          const lastSentDate = new Date(lastSent.enviado_em);
+          if (now.getTime() - lastSentDate.getTime() < INACTIVITY_DAYS * 24 * 60 * 60 * 1000) continue;
+        }
+
+        // Generate personalized follow-up using AI
+        const attemptNumber = (existingCount || 0) + 1;
+
+        // Get last few messages for context
+        const { data: recentMsgs } = await supabase
+          .from("whatsapp_mensagens")
+          .select("mensagem, direcao")
+          .eq("telefone", phone)
+          .order("criado_em", { ascending: false })
+          .limit(6);
+
+        const context = (recentMsgs || []).reverse()
+          .map((m: any) => `${m.direcao === "recebida" ? "Cliente" : "Agente"}: ${m.mensagem}`)
+          .join("\n");
+
+        let followupMsg = `Oi ${info.nome?.split(" ")[0] || ""}! 😊 Tudo bem? Faz um tempinho que não conversamos. Se precisar de algo, estou por aqui!`;
+
+        if (LOVABLE_API_KEY) {
+          try {
+            const toneByAttempt: Record<number, string> = {
+              1: "Seja leve e amigável. Referencie sutilmente o assunto da última conversa.",
+              2: "Seja gentil mas um pouco mais direto. Ofereça algo de valor (dica, conteúdo, condição).",
+              3: "Seja carinhoso e final. Diga que está à disposição e que é a última mensagem para não incomodar.",
+            };
+
+            const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash-lite",
+                messages: [
+                  {
+                    role: "system",
+                    content: `Você é o Criativo X da Lápis Criativo. Gere UMA mensagem curta de follow-up (máx 2 frases) para WhatsApp.
+Esta é a tentativa ${attemptNumber} de ${MAX_AUTO_FOLLOWUPS}.
+${toneByAttempt[attemptNumber] || toneByAttempt[1]}
+- Seja natural, como pessoa real
+- Use 1-2 emojis
+- NÃO use markdown ou listas
+- Responda APENAS com a mensagem`,
+                  },
+                  {
+                    role: "user",
+                    content: `Nome: ${info.nome || "cliente"}\nTentativa: ${attemptNumber}/${MAX_AUTO_FOLLOWUPS}\n\nÚltimas mensagens:\n${context}\n\nGere a mensagem:`,
+                  },
+                ],
+              }),
+            });
+
+            if (aiResp.ok) {
+              const aiData = await aiResp.json();
+              const generated = aiData.choices?.[0]?.message?.content?.trim();
+              if (generated && generated.length > 10 && generated.length < 500) {
+                followupMsg = generated;
+              }
+            }
+          } catch (e) {
+            console.error("AI follow-up generation error:", e);
+          }
+        }
+
+        // Schedule for next business morning at 10:00
+        const scheduleDate = new Date(now.getTime() + 2 * 60 * 60 * 1000); // minimum 2h from now
+        if (scheduleDate.getHours() < 10) scheduleDate.setHours(10, 0, 0, 0);
+        if (scheduleDate.getHours() > 19) {
+          scheduleDate.setDate(scheduleDate.getDate() + 1);
+          scheduleDate.setHours(10, 0, 0, 0);
+        }
+
+        await supabase.from("whatsapp_followups").insert({
+          telefone: phone,
+          nome_contato: info.nome,
+          mensagem: followupMsg,
+          motivo: attemptNumber === MAX_AUTO_FOLLOWUPS ? "reengajamento" : "remarketing",
+          instancia: info.instancia,
+          agendado_para: scheduleDate.toISOString(),
+          origem: "auto",
+        });
+
+        autoCreated++;
+        console.log(`Auto follow-up #${attemptNumber} criado para ${phone}`);
+      }
+
+      if (autoCreated > 0) {
+        console.log(`${autoCreated} follow-ups automáticos criados por inatividade`);
+      }
+    }
+
+    // ============================
+    // STEP 2: Send scheduled follow-ups that are due
+    // ============================
     const { data: followups, error } = await supabase
       .from("whatsapp_followups")
       .select("*")
       .eq("status", "agendado")
-      .lte("agendado_para", now)
+      .lte("agendado_para", nowISO)
       .order("agendado_para", { ascending: true })
       .limit(20);
 
     if (error) throw error;
-    if (!followups || followups.length === 0) {
-      return new Response(JSON.stringify({ ok: true, processed: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     let processed = 0;
     let errors = 0;
 
-    for (const fu of followups) {
+    for (const fu of (followups || [])) {
       try {
-        // Check if handoff is active (human already contacted)
+        // Check if client responded since follow-up was created
+        if (fu.origem === "auto") {
+          const { data: recentMsg } = await supabase
+            .from("whatsapp_mensagens")
+            .select("criado_em")
+            .eq("telefone", fu.telefone)
+            .eq("direcao", "recebida")
+            .gt("criado_em", fu.criado_em)
+            .limit(1)
+            .maybeSingle();
+
+          if (recentMsg) {
+            // Client responded! Cancel this and all pending auto follow-ups
+            await supabase.from("whatsapp_followups").update({
+              status: "cancelado",
+              atualizado_em: nowISO,
+              erro: "Cliente respondeu, follow-up cancelado",
+            }).eq("telefone", fu.telefone).eq("status", "agendado").eq("origem", "auto");
+            console.log(`Follow-ups cancelados para ${fu.telefone} — cliente respondeu`);
+            continue;
+          }
+        }
+
+        // Check if handoff is active
         const { data: handoff } = await supabase
           .from("whatsapp_handoff")
           .select("ativo")
@@ -54,16 +264,15 @@ serve(async (req) => {
           .maybeSingle();
 
         if (handoff) {
-          // Human is handling, cancel follow-up
           await supabase.from("whatsapp_followups").update({
             status: "cancelado",
-            atualizado_em: now,
-            erro: "Handoff humano ativo, follow-up cancelado",
+            atualizado_em: nowISO,
+            erro: "Handoff humano ativo",
           }).eq("id", fu.id);
           continue;
         }
 
-        // Send message via Evolution API
+        // Send message
         const sendResp = await fetch(`${EVOLUTION_API_URL}/message/sendText/${fu.instancia}`, {
           method: "POST",
           headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
@@ -71,11 +280,9 @@ serve(async (req) => {
         });
 
         if (!sendResp.ok) {
-          const errText = await sendResp.text();
-          throw new Error(`Evolution API error: ${errText}`);
+          throw new Error(`Evolution API error: ${await sendResp.text()}`);
         }
 
-        // Save message in history
         await supabase.from("whatsapp_mensagens").insert({
           telefone: fu.telefone,
           nome_contato: fu.nome_contato || "Criativo X",
@@ -84,23 +291,20 @@ serve(async (req) => {
           instancia: fu.instancia,
         });
 
-        // Mark as sent
         await supabase.from("whatsapp_followups").update({
           status: "enviado",
-          enviado_em: now,
-          atualizado_em: now,
+          enviado_em: nowISO,
+          atualizado_em: nowISO,
         }).eq("id", fu.id);
 
         processed++;
-
-        // Small delay between sends
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.error(`Follow-up error for ${fu.telefone}:`, e);
         await supabase.from("whatsapp_followups").update({
           status: "erro",
           erro: e instanceof Error ? e.message : "Erro desconhecido",
-          atualizado_em: now,
+          atualizado_em: nowISO,
         }).eq("id", fu.id);
         errors++;
       }

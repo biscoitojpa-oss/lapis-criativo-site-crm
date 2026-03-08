@@ -25,6 +25,7 @@ import DiagnosticoPage from "./pages/DiagnosticoPage";
 import CRMBaseConhecimento from "./pages/crm/CRMBaseConhecimento";
 import CRMCriativoX from "./pages/crm/CRMCriativoX";
 import CRMBuscadorLeads from "./pages/crm/CRMBuscadorLeads";
+import CRMWhatsApp from "./pages/crm/CRMWhatsApp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";

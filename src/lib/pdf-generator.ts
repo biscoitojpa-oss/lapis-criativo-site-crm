@@ -59,7 +59,7 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
 
 const complexidadeLabel: Record<string, string> = { baixo: "Baixo", medio: "Médio", alto: "Alto" };
 
-export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
+export function generatePropostaPDF(proposta: any, itens: any[], cliente: any, configPag?: any) {
   const doc = new jsPDF();
   addHeader(doc, "Proposta", proposta.numero);
   let y = 55;

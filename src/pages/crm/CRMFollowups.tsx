@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText, TrendingUp, Users, Ban, MessageSquare } from "lucide-react";
+import { CalendarClock, Plus, Send, Trash2, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, Play, FileText, TrendingUp, Users, Ban, MessageSquare, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,12 +68,21 @@ interface Followup {
   criado_em: string;
 }
 
+type PeriodFilter = "all" | "week" | "month";
+type OriginFilter = "all" | "manual" | "auto";
+type StatusFilter = "all" | "agendado" | "enviado" | "erro" | "cancelado";
+
 const CRMFollowups = () => {
   const { user } = useAuth();
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+
+  // Filters
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   // New follow-up form
   const [newPhone, setNewPhone] = useState("");
@@ -90,7 +99,7 @@ const CRMFollowups = () => {
       .from("whatsapp_followups")
       .select("*")
       .order("agendado_para", { ascending: true })
-      .limit(200);
+      .limit(500);
     setFollowups((data || []) as unknown as Followup[]);
     setLoading(false);
   }, []);
@@ -99,12 +108,35 @@ const CRMFollowups = () => {
     fetchFollowups();
   }, [fetchFollowups]);
 
-  const stats = {
-    agendado: followups.filter(f => f.status === "agendado").length,
-    enviado: followups.filter(f => f.status === "enviado").length,
-    erro: followups.filter(f => f.status === "erro").length,
-    cancelado: followups.filter(f => f.status === "cancelado").length,
-  };
+  // Filtered followups
+  const filteredFollowups = useMemo(() => {
+    let result = followups;
+
+    if (periodFilter !== "all") {
+      const now = new Date();
+      const cutoff = new Date();
+      if (periodFilter === "week") cutoff.setDate(now.getDate() - 7);
+      else if (periodFilter === "month") cutoff.setMonth(now.getMonth() - 1);
+      result = result.filter(f => new Date(f.criado_em) >= cutoff);
+    }
+
+    if (originFilter !== "all") {
+      result = result.filter(f => f.origem === originFilter);
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter(f => f.status === statusFilter);
+    }
+
+    return result;
+  }, [followups, periodFilter, originFilter, statusFilter]);
+
+  const stats = useMemo(() => ({
+    agendado: filteredFollowups.filter(f => f.status === "agendado").length,
+    enviado: filteredFollowups.filter(f => f.status === "enviado").length,
+    erro: filteredFollowups.filter(f => f.status === "erro").length,
+    cancelado: filteredFollowups.filter(f => f.status === "cancelado").length,
+  }), [filteredFollowups]);
 
   const autoMetrics = useMemo(() => {
     const autoFollowups = followups.filter(f => f.origem === "auto");

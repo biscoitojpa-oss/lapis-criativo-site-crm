@@ -25,9 +25,11 @@ const ContratoDetalhe = () => {
     Promise.all([
       supabase.from("contratos").select("*, clientes(nome, empresa, cnpj_cpf, email)").eq("id", contratoId).single(),
       supabase.from("contrato_itens").select("*, servicos(nome, prazo_entrega, nivel_complexidade, entregaveis, requer_reuniao, categoria)").eq("contrato_id", contratoId),
-    ]).then(([cRes, iRes]) => {
+      supabase.from("config_pagamentos").select("*").limit(1).single(),
+    ]).then(([cRes, iRes, pagRes]) => {
       setContrato(cRes.data);
       setItens(iRes.data || []);
+      if (pagRes.data) setConfigPag(pagRes.data);
       setLoading(false);
     });
   }, [contratoId]);

@@ -257,6 +257,11 @@ const CRMWhatsApp = () => {
         msgs_antes_descanso: config.msgs_antes_descanso,
         descanso_min: config.descanso_min,
         descanso_max: config.descanso_max,
+        followup_ativo: config.followup_ativo,
+        followup_dias_inatividade: config.followup_dias_inatividade,
+        followup_max_tentativas: config.followup_max_tentativas,
+        followup_horario_inicio: config.followup_horario_inicio,
+        followup_horario_fim: config.followup_horario_fim,
       }).eq("id", config.id);
       if (error) throw error;
       toast.success("Configurações salvas!");

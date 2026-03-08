@@ -113,7 +113,7 @@ const CRMWhatsApp = () => {
   };
 
   // Instâncias que não devem aparecer no CRM
-  const HIDDEN_INSTANCES = ["Daher", "daher"];
+  const HIDDEN_INSTANCES = ["Daher", "daher", "leads"];
 
   const fetchInstances = useCallback(async () => {
     setLoadingInstances(true);

@@ -52,6 +52,11 @@ interface AntiBanConfig {
   msgs_antes_descanso: number;
   descanso_min: number;
   descanso_max: number;
+  followup_dias_inatividade: number;
+  followup_max_tentativas: number;
+  followup_horario_inicio: string;
+  followup_horario_fim: string;
+  followup_ativo: boolean;
 }
 
 const CRMWhatsApp = () => {

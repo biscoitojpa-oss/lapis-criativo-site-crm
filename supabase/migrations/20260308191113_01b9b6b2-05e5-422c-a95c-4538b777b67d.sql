@@ -1,0 +1,2 @@
+CREATE POLICY "Auth users can delete leads" ON public.leads FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Auth users can update leads" ON public.leads FOR UPDATE TO authenticated USING (true);

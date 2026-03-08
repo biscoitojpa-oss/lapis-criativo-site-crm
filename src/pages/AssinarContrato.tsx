@@ -16,6 +16,7 @@ const AssinarContrato = () => {
   const [saving, setSaving] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [configPag, setConfigPag] = useState<any>(null);
 
   useEffect(() => {
     if (!token) return;

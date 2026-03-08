@@ -538,6 +538,11 @@ export type Database = {
           dias_envio: number[]
           digitacao_max: number
           digitacao_min: number
+          followup_ativo: boolean
+          followup_dias_inatividade: number
+          followup_horario_fim: string
+          followup_horario_inicio: string
+          followup_max_tentativas: number
           horario_fim: string
           horario_inicio: string
           id: string
@@ -553,6 +558,11 @@ export type Database = {
           dias_envio?: number[]
           digitacao_max?: number
           digitacao_min?: number
+          followup_ativo?: boolean
+          followup_dias_inatividade?: number
+          followup_horario_fim?: string
+          followup_horario_inicio?: string
+          followup_max_tentativas?: number
           horario_fim?: string
           horario_inicio?: string
           id?: string
@@ -568,6 +578,11 @@ export type Database = {
           dias_envio?: number[]
           digitacao_max?: number
           digitacao_min?: number
+          followup_ativo?: boolean
+          followup_dias_inatividade?: number
+          followup_horario_fim?: string
+          followup_horario_inicio?: string
+          followup_max_tentativas?: number
           horario_fim?: string
           horario_inicio?: string
           id?: string

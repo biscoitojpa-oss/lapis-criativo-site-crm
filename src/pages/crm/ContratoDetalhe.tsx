@@ -18,6 +18,7 @@ const ContratoDetalhe = () => {
   const [contrato, setContrato] = useState<any>(null);
   const [itens, setItens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [configPag, setConfigPag] = useState<any>(null);
 
   useEffect(() => {
     if (!contratoId) return;

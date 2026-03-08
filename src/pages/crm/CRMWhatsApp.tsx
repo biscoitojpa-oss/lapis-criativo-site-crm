@@ -838,7 +838,7 @@ const CRMWhatsApp = () => {
                             <SelectTrigger className="bg-background/50 border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {instances.length > 0 ? instances.map((inst, i) => {
-                                const name = inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
+                                const name = inst.name || inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
                                 return <SelectItem key={name} value={name}>{name}</SelectItem>;
                               }) : <SelectItem value="default">default</SelectItem>}
                             </SelectContent>

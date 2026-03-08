@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FilePlus, Download } from "lucide-react";
+import { ArrowLeft, FilePlus, Download, Link2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { generateContratoPDF } from "@/lib/pdf-generator";
 
@@ -90,6 +90,13 @@ const ContratoDetalhe = () => {
             <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4" /> Baixar PDF
             </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const url = `${window.location.origin}/assinar/${contrato.token_assinatura}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link de assinatura copiado!");
+            }}>
+              <Link2 className="w-4 h-4" /> Link de Assinatura
+            </Button>
             {contrato.status === "ativo" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => updateStatus("suspenso")} className="text-yellow-500">Suspender</Button>
@@ -142,6 +149,27 @@ const ContratoDetalhe = () => {
           <p className="text-sm text-muted-foreground">{contrato.observacoes}</p>
         </div>
       )}
+
+      {/* Signature status */}
+      <div className="glass-card p-6">
+        <h2 className="font-semibold text-lg mb-3">Assinatura Digital</h2>
+        {contrato.assinatura_cliente ? (
+          <div className="flex items-center gap-4">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+            <div>
+              <p className="text-sm font-medium text-green-400">Contrato assinado pelo cliente</p>
+              <p className="text-xs text-muted-foreground">{contrato.assinado_em ? new Date(contrato.assinado_em).toLocaleString("pt-BR") : ""}</p>
+            </div>
+            <div className="ml-auto border border-border/50 rounded-lg p-2 bg-white">
+              <img src={contrato.assinatura_cliente} alt="Assinatura" className="max-h-16" />
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Aguardando assinatura do cliente. Envie o link de assinatura acima.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

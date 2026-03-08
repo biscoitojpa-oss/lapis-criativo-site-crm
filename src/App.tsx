@@ -23,6 +23,7 @@ import CRMServicos from "./pages/crm/CRMServicos";
 import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/crm" element={<ProtectedRoute><CRMLayout /></ProtectedRoute>}>
               <Route index element={<CRMDashboard />} />
               <Route path="leads" element={<CRMLeads />} />

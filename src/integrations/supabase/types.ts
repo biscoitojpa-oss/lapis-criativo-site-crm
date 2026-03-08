@@ -428,30 +428,45 @@ export type Database = {
         Row: {
           ativo: boolean
           atualizado_em: string
+          categoria: string | null
           criado_em: string
           descricao: string | null
+          entregaveis: string | null
           id: string
+          nivel_complexidade: string | null
           nome: string
+          prazo_entrega: number | null
+          requer_reuniao: boolean | null
           tipo_cobranca: string
           valor_padrao: number | null
         }
         Insert: {
           ativo?: boolean
           atualizado_em?: string
+          categoria?: string | null
           criado_em?: string
           descricao?: string | null
+          entregaveis?: string | null
           id?: string
+          nivel_complexidade?: string | null
           nome: string
+          prazo_entrega?: number | null
+          requer_reuniao?: boolean | null
           tipo_cobranca?: string
           valor_padrao?: number | null
         }
         Update: {
           ativo?: boolean
           atualizado_em?: string
+          categoria?: string | null
           criado_em?: string
           descricao?: string | null
+          entregaveis?: string | null
           id?: string
+          nivel_complexidade?: string | null
           nome?: string
+          prazo_entrega?: number | null
+          requer_reuniao?: boolean | null
           tipo_cobranca?: string
           valor_padrao?: number | null
         }

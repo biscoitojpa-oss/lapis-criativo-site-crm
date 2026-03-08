@@ -31,7 +31,7 @@ const ContratoDetalhe = () => {
   }, [contratoId]);
 
   const updateStatus = async (status: string) => {
-    await supabase.from("contratos").update({ status }).eq("id", contratoId!);
+    await supabase.from("contratos").update({ status } as any).eq("id", contratoId!);
     setContrato({ ...contrato, status });
     toast.success(`Status atualizado para ${status}`);
   };

@@ -376,6 +376,29 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any, c
     }
   }
 
+  // Payment section
+  if (configPag && (configPag.chave_pix || configPag.link_pagamento_cartao)) {
+    finalY = checkPageBreak(doc, finalY, 40);
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, finalY - 4, 180, 10, 2, 2, "F");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("FORMA DE PAGAMENTO", 20, finalY + 3);
+    finalY += 14;
+
+    if (configPag.chave_pix) {
+      finalY = addSection(doc, finalY, "PIX:", configPag.chave_pix);
+      if (configPag.nome_recebedor) finalY = addSection(doc, finalY, "Recebedor:", configPag.nome_recebedor);
+      if (configPag.banco) finalY = addSection(doc, finalY, "Banco:", configPag.banco);
+      finalY += 3;
+    }
+    if (configPag.link_pagamento_cartao) {
+      finalY = addSection(doc, finalY, "Cartão:", configPag.link_pagamento_cartao);
+    }
+    finalY += 5;
+  }
+
   if (contrato.observacoes) {
     finalY = checkPageBreak(doc, finalY, 15);
     doc.setFontSize(9);

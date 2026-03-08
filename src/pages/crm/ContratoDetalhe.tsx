@@ -41,7 +41,7 @@ const ContratoDetalhe = () => {
   };
 
   const handleDownloadPDF = () => {
-    generateContratoPDF(contrato, itens, contrato.clientes);
+    generateContratoPDF(contrato, itens, contrato.clientes, configPag);
     toast.success("PDF gerado com sucesso!");
   };
 

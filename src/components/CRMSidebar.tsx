@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Brain, BarChart3, LogOut, Pencil,
   MapPin, Search, Target, Globe, LineChart, Calendar, Instagram,
-  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen, Bot, Crosshair,
+  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen, Bot, Crosshair, MessageCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,7 @@ const cadastroItems = [
 
 const agentItems = [
   { title: "Criativo X", url: "/crm/criativo-x", icon: Bot },
+  { title: "WhatsApp", url: "/crm/whatsapp", icon: MessageCircle },
   { title: "Buscador de Leads", url: "/crm/buscador-leads", icon: Crosshair },
 ];
 

@@ -475,6 +475,105 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_config: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          descanso_max: number
+          descanso_min: number
+          dias_envio: number[]
+          digitacao_max: number
+          digitacao_min: number
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          intervalo_max: number
+          intervalo_min: number
+          msgs_antes_descanso: number
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          descanso_max?: number
+          descanso_min?: number
+          dias_envio?: number[]
+          digitacao_max?: number
+          digitacao_min?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          intervalo_max?: number
+          intervalo_min?: number
+          msgs_antes_descanso?: number
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          descanso_max?: number
+          descanso_min?: number
+          dias_envio?: number[]
+          digitacao_max?: number
+          digitacao_min?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          intervalo_max?: number
+          intervalo_min?: number
+          msgs_antes_descanso?: number
+        }
+        Relationships: []
+      }
+      whatsapp_fila: {
+        Row: {
+          agendado_para: string
+          atualizado_em: string
+          criado_em: string
+          criado_por: string
+          enviado_em: string | null
+          erro: string | null
+          id: string
+          instancia: string
+          max_tentativas: number
+          mensagem: string
+          nome_lead: string | null
+          status: Database["public"]["Enums"]["fila_status"]
+          telefone: string
+          tentativas: number
+        }
+        Insert: {
+          agendado_para?: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          instancia?: string
+          max_tentativas?: number
+          mensagem: string
+          nome_lead?: string | null
+          status?: Database["public"]["Enums"]["fila_status"]
+          telefone: string
+          tentativas?: number
+        }
+        Update: {
+          agendado_para?: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          instancia?: string
+          max_tentativas?: number
+          mensagem?: string
+          nome_lead?: string | null
+          status?: Database["public"]["Enums"]["fila_status"]
+          telefone?: string
+          tentativas?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -491,6 +590,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "member"
       contrato_status: "ativo" | "encerrado" | "cancelado" | "suspenso"
+      fila_status: "pendente" | "processando" | "enviado" | "erro" | "expirado"
       proposta_status:
         | "rascunho"
         | "enviada"
@@ -627,6 +727,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "member"],
       contrato_status: ["ativo", "encerrado", "cancelado", "suspenso"],
+      fila_status: ["pendente", "processando", "enviado", "erro", "expirado"],
       proposta_status: [
         "rascunho",
         "enviada",

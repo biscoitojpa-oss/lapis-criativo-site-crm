@@ -3,11 +3,12 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle } from "lucide-react";
+import WhatsAppChat from "@/components/WhatsAppChat";
 
 const propostaStatusLabels: Record<string, { label: string; color: string }> = {
   rascunho: { label: "Gerada", color: "bg-muted text-muted-foreground" },
   enviada: { label: "Enviada", color: "bg-blue-500/20 text-blue-400" },
-  aprovada: { label: "Aceita", color: "bg-green-500/20 text-green-400" },
+  aprovada: { label: "Aceita", color: "bg-emerald-500/20 text-emerald-400" },
   recusada: { label: "Não Aceita", color: "bg-destructive/20 text-destructive" },
   cancelada: { label: "Cancelada", color: "bg-muted text-muted-foreground" },
 };
@@ -16,7 +17,7 @@ const contratoStatusLabels: Record<string, { label: string; color: string }> = {
   ativo: { label: "Gerado", color: "bg-blue-500/20 text-blue-400" },
   encerrado: { label: "Encerrado", color: "bg-muted text-muted-foreground" },
   cancelado: { label: "Desistiu", color: "bg-destructive/20 text-destructive" },
-  suspenso: { label: "Suspenso", color: "bg-yellow-500/20 text-yellow-400" },
+  suspenso: { label: "Suspenso", color: "bg-amber-500/20 text-amber-400" },
 };
 
 const ClienteDetalhe = () => {
@@ -25,6 +26,7 @@ const ClienteDetalhe = () => {
   const [propostas, setPropostas] = useState<any[]>([]);
   const [contratos, setContratos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     if (!clienteId) return;
@@ -43,11 +45,12 @@ const ClienteDetalhe = () => {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
   if (!cliente) return <div className="p-8 text-center">Cliente não encontrado</div>;
 
-  // Check if contract was signed
   const getContratoLabel = (c: any) => {
-    if (c.assinatura_cliente) return { label: "Assinado", color: "bg-green-500/20 text-green-400" };
+    if (c.assinatura_cliente) return { label: "Assinado", color: "bg-emerald-500/20 text-emerald-400" };
     return contratoStatusLabels[c.status] || { label: c.status, color: "bg-muted text-muted-foreground" };
   };
+
+  const clientePhone = cliente.whatsapp?.replace(/\D/g, "") || cliente.telefone?.replace(/\D/g, "");
 
   return (
     <div className="space-y-6">
@@ -64,7 +67,7 @@ const ClienteDetalhe = () => {
           {cliente.whatsapp && (
             <div className="flex items-center gap-2 text-sm">
               <Phone className="w-4 h-4 text-muted-foreground" />
-              <a href={`https://wa.me/55${cliente.whatsapp.replace(/\D/g, "")}`} target="_blank" className="text-green-500 hover:underline">{cliente.whatsapp}</a>
+              <span className="text-emerald-400">{cliente.whatsapp}</span>
             </div>
           )}
           {cliente.cidade && <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4" />{cliente.cidade}{cliente.estado ? ` - ${cliente.estado}` : ""}</div>}
@@ -78,17 +81,15 @@ const ClienteDetalhe = () => {
             <Link to={`/crm/contratos/novo?cliente=${clienteId}`}>
               <Button variant="outline" size="sm"><FilePlus className="w-4 h-4" /> Novo Contrato</Button>
             </Link>
-            {cliente.whatsapp && (
-              <a href={`https://wa.me/55${cliente.whatsapp.replace(/\D/g, "")}`} target="_blank">
-                <Button variant="outline" size="sm" className="text-green-500">
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
-                </Button>
-              </a>
+            {clientePhone && (
+              <Button variant="outline" size="sm" className="text-emerald-400" onClick={() => setShowChat(!showChat)}>
+                <MessageCircle className="w-4 h-4" /> {showChat ? "Fechar Chat" : "WhatsApp"}
+              </Button>
             )}
           </div>
         </div>
 
-        {/* Propostas com status */}
+        {/* Propostas */}
         <div className="glass-card p-6">
           <h2 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" /> Propostas ({propostas.length})
@@ -113,7 +114,7 @@ const ClienteDetalhe = () => {
           )}
         </div>
 
-        {/* Contratos com status */}
+        {/* Contratos */}
         <div className="glass-card p-6">
           <h2 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
             <FilePlus className="w-5 h-5 text-primary" /> Contratos ({contratos.length})
@@ -140,6 +141,13 @@ const ClienteDetalhe = () => {
           )}
         </div>
       </div>
+
+      {/* WhatsApp Chat Panel */}
+      {showChat && clientePhone && (
+        <div className="glass-card overflow-hidden" style={{ height: "500px" }}>
+          <WhatsAppChat phone={clientePhone} contactName={cliente.nome} />
+        </div>
+      )}
     </div>
   );
 };

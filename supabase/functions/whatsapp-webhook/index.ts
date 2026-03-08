@@ -15,7 +15,6 @@ serve(async (req) => {
     const body = await req.json();
     console.log("Webhook received:", JSON.stringify(body).slice(0, 500));
 
-    // Evolution API sends message events
     const event = body.event || body.data?.event;
     if (event !== "messages.upsert" && event !== "message") {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -34,13 +33,24 @@ serve(async (req) => {
     }
 
     const phone = remoteJid.replace("@s.whatsapp.net", "").replace("@g.us", "");
-    console.log(`Message from ${phone}: ${messageText}`);
+    const instanceName = body.instance || "default";
+    const pushName = message.pushName || body.data?.pushName || phone;
+    console.log(`Message from ${phone} (${pushName}): ${messageText}`);
 
-    // Get knowledge base
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Save incoming message
+    await supabase.from("whatsapp_mensagens").insert({
+      telefone: phone,
+      nome_contato: pushName,
+      mensagem: messageText,
+      direcao: "recebida",
+      instancia: instanceName,
+    });
+
+    // Get knowledge base
     const { data: knowledge } = await supabase
       .from("base_conhecimento")
       .select("titulo, conteudo, categoria")
@@ -99,8 +109,6 @@ REGRAS:
       throw new Error("Evolution API não configurada");
     }
 
-    const instanceName = body.instance || "default";
-    
     const sendResponse = await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
       method: "POST",
       headers: {
@@ -118,9 +126,18 @@ REGRAS:
       console.error("Evolution send error:", errText);
     }
 
+    // Save AI reply message
+    await supabase.from("whatsapp_mensagens").insert({
+      telefone: phone,
+      nome_contato: "Criativo X",
+      mensagem: reply,
+      direcao: "enviada",
+      instancia: instanceName,
+    });
+
     // Save as lead if new
     await supabase.from("leads").upsert({
-      nome: phone,
+      nome: pushName || phone,
       email: `${phone}@whatsapp`,
       whatsapp: phone,
       ferramenta: "criativo-x-whatsapp",

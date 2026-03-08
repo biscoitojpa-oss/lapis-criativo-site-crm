@@ -68,7 +68,7 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold mb-6">Contato</h4>
             <div className="space-y-3 text-muted-foreground">
-              <p>(21) 96598-2906</p>
+              <p>(21) 99179-6781</p>
               <p>contato@agencialapiscriativo.com.br</p>
               <p>Rio de Janeiro - RJ</p>
             </div>

@@ -34,7 +34,28 @@ serve(async (req) => {
     const now = new Date();
     const nowISO = now.toISOString();
 
-    // ============================
+    // Load follow-up config from DB
+    const { data: configRow } = await supabase
+      .from("whatsapp_config")
+      .select("followup_dias_inatividade, followup_max_tentativas, followup_horario_inicio, followup_horario_fim, followup_ativo")
+      .limit(1)
+      .maybeSingle();
+
+    if (configRow) {
+      INACTIVITY_DAYS = configRow.followup_dias_inatividade ?? INACTIVITY_DAYS;
+      MAX_AUTO_FOLLOWUPS = configRow.followup_max_tentativas ?? MAX_AUTO_FOLLOWUPS;
+      FOLLOWUP_ATIVO = configRow.followup_ativo ?? true;
+      const startParts = (configRow.followup_horario_inicio || "10:00").split(":");
+      const endParts = (configRow.followup_horario_fim || "19:00").split(":");
+      FOLLOWUP_HOUR_START = parseInt(startParts[0]) || 10;
+      FOLLOWUP_HOUR_END = parseInt(endParts[0]) || 19;
+    }
+
+    if (!FOLLOWUP_ATIVO) {
+      return new Response(JSON.stringify({ ok: true, message: "Follow-up automático desativado", processed: 0, errors: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     // STEP 1: Detect inactive conversations and create auto follow-ups
     // ============================
     const twoDaysAgo = new Date(now.getTime() - INACTIVITY_DAYS * 24 * 60 * 60 * 1000);

@@ -528,10 +528,59 @@ const CRMWhatsApp = () => {
               <h2 className="font-semibold text-lg">Instâncias Evolution API</h2>
               <p className="text-xs text-muted-foreground">Gerencie suas conexões WhatsApp</p>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchInstances} disabled={loadingInstances}>
-              <RefreshCw className={`w-4 h-4 mr-1.5 ${loadingInstances ? "animate-spin" : ""}`} />Atualizar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="hero" size="sm"><Plus className="w-4 h-4 mr-1.5" />Nova Instância</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Criar Nova Instância</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div>
+                      <Label>Nome da Instância *</Label>
+                      <Input placeholder="minha-instancia" value={newInstanceName} onChange={e => setNewInstanceName(e.target.value)} className="mt-1" />
+                      <p className="text-xs text-muted-foreground mt-1">Sem espaços ou caracteres especiais</p>
+                    </div>
+                    <div>
+                      <Label>URL do Webhook (opcional)</Label>
+                      <Input placeholder={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook`} value={newInstanceWebhook} onChange={e => setNewInstanceWebhook(e.target.value)} className="mt-1" />
+                      <p className="text-xs text-muted-foreground mt-1">Deixe vazio para usar o webhook padrão</p>
+                    </div>
+                    <Button onClick={createInstance} disabled={creatingInstance} className="w-full" variant="hero">
+                      {creatingInstance ? <><RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />Criando...</> : <><Plus className="w-4 h-4 mr-1.5" />Criar Instância</>}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" size="sm" onClick={fetchInstances} disabled={loadingInstances}>
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${loadingInstances ? "animate-spin" : ""}`} />Atualizar
+              </Button>
+            </div>
           </div>
+
+          {/* QR Code Dialog */}
+          <Dialog open={!!showQrFor} onOpenChange={() => setShowQrFor(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><QrCode className="w-5 h-5" />Conectar {showQrFor}</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4 py-4">
+                {showQrFor && qrCodeData[showQrFor] ? (
+                  <>
+                    <img src={qrCodeData[showQrFor].startsWith("data:") ? qrCodeData[showQrFor] : `data:image/png;base64,${qrCodeData[showQrFor]}`} alt="QR Code" className="w-64 h-64 rounded-lg border border-border" />
+                    <p className="text-sm text-muted-foreground text-center">Abra o WhatsApp no seu celular e escaneie o QR Code acima</p>
+                    <Button variant="outline" size="sm" onClick={() => showQrFor && connectInstance(showQrFor)}>
+                      <RefreshCw className="w-4 h-4 mr-1.5" />Gerar Novo QR
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">QR Code não disponível</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {loadingInstances && instances.length === 0 ? (
             <Card className="bg-card/50 border-border/50">
@@ -545,6 +594,7 @@ const CRMWhatsApp = () => {
               <CardContent className="py-12 text-center">
                 <WifiOff className="w-8 h-8 mx-auto mb-3 text-muted-foreground opacity-40" />
                 <p className="text-sm text-muted-foreground">Nenhuma instância encontrada.</p>
+                <p className="text-xs text-muted-foreground mt-1">Crie uma nova instância para começar.</p>
               </CardContent>
             </Card>
           ) : (
@@ -566,21 +616,25 @@ const CRMWhatsApp = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Button variant="outline" size="sm" onClick={() => checkHealth(name)} disabled={healthChecking === name}>
-                            <Heart className={`w-3.5 h-3.5 mr-1.5 ${healthChecking === name ? "animate-pulse" : ""}`} />Saúde
+                            <Heart className={`w-3.5 h-3.5 mr-1 ${healthChecking === name ? "animate-pulse" : ""}`} />Saúde
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            callEvolution("connectionState", name).then(r => {
-                              const s = r.instance?.state || r.state;
-                              setConnectionStates(prev => ({ ...prev, [name]: s }));
-                              toast.info(`Conexão: ${s}`);
-                            }).catch(e => toast.error(e.message));
-                          }}>
-                            <Wifi className="w-3.5 h-3.5 mr-1.5" />Conexão
+                          <Button variant="outline" size="sm" onClick={() => connectInstance(name)}>
+                            <QrCode className="w-3.5 h-3.5 mr-1" />QR Code
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => restartInstance(name)} disabled={restartingInstance === name}>
+                            <Power className={`w-3.5 h-3.5 mr-1 ${restartingInstance === name ? "animate-spin" : ""}`} />Reiniciar
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => logoutInstance(name)} disabled={loggingOut === name}>
+                            <LogOut className="w-3.5 h-3.5 mr-1" />Desconectar
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteInstance(name)} disabled={deletingInstance === name}>
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />Excluir
                           </Button>
                         </div>
                       </div>
+                      {/* Test message */}
                       <div className="mt-4 pt-3 border-t border-border/30 flex items-end gap-2">
                         <div className="flex-1">
                           <label className="text-xs text-muted-foreground mb-1 block">Enviar Teste</label>
@@ -603,11 +657,16 @@ const CRMWhatsApp = () => {
           <Card className="bg-card/50 border-border/50">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2"><Zap className="w-4 h-4 text-primary" />URL do Webhook</CardTitle>
-              <CardDescription>Configure esta URL no painel Evolution API</CardDescription>
+              <CardDescription>Configure esta URL no painel Evolution API para receber mensagens</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="bg-muted/30 rounded-lg p-3 border border-border/30">
-                <code className="text-xs text-primary break-all">{import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook</code>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-muted/30 rounded-lg p-3 border border-border/30">
+                  <code className="text-xs text-primary break-all">{import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook</code>
+                </div>
+                <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
+                  <Copy className="w-4 h-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>

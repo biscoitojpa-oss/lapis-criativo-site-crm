@@ -1,4 +1,5 @@
-import { Pencil, Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import logoImg from "@/assets/logo-lapis-criativo.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();

@@ -23,6 +23,7 @@ import CRMServicos from "./pages/crm/CRMServicos";
 import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

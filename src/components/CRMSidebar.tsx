@@ -25,6 +25,7 @@ const cadastroItems = [
   { title: "Serviços", url: "/crm/servicos", icon: Package },
   { title: "Usuários", url: "/crm/usuarios", icon: UserPlus },
   { title: "Base de Conhecimento", url: "/crm/base-conhecimento", icon: BookOpen },
+  { title: "Pagamentos", url: "/crm/pagamentos", icon: CreditCard },
 ];
 
 const agentItems = [

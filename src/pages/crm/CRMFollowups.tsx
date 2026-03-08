@@ -436,7 +436,8 @@ const CRMFollowups = () => {
         <CardContent>
           {loading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
-          ) : followups.length === 0 ? (
+          ) : filteredFollowups.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhum follow-up encontrado</p>
             <p className="text-sm text-muted-foreground text-center py-8">Nenhum follow-up agendado</p>
           ) : (
             <div className="space-y-3">

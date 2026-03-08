@@ -14,6 +14,14 @@ const statusColors: Record<string, string> = {
   cancelada: "bg-muted text-muted-foreground",
 };
 
+const statusLabels: Record<string, string> = {
+  rascunho: "Gerada",
+  enviada: "Enviada",
+  aprovada: "Aceita",
+  recusada: "Não Aceita",
+  cancelada: "Cancelada",
+};
+
 const CRMPropostas = () => {
   const [propostas, setPropostas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,10 +67,10 @@ const CRMPropostas = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="rascunho">Rascunho</SelectItem>
+            <SelectItem value="rascunho">Gerada</SelectItem>
             <SelectItem value="enviada">Enviada</SelectItem>
-            <SelectItem value="aprovada">Aprovada</SelectItem>
-            <SelectItem value="recusada">Recusada</SelectItem>
+            <SelectItem value="aprovada">Aceita</SelectItem>
+            <SelectItem value="recusada">Não Aceita</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
           </SelectContent>
         </Select>
@@ -96,7 +104,7 @@ const CRMPropostas = () => {
                   <td className="py-3 px-4 text-muted-foreground">{(p.clientes as any)?.nome || "—"}</td>
                   <td className="py-3 px-4">R$ {Number(p.valor_total).toFixed(2)}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs capitalize ${statusColors[p.status] || ""}`}>{p.status}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${statusColors[p.status] || ""}`}>{statusLabels[p.status] || p.status}</span>
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">{new Date(p.criado_em).toLocaleDateString("pt-BR")}</td>
                 </tr>

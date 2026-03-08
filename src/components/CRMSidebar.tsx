@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Brain, BarChart3, LogOut, Pencil,
   MapPin, Search, Target, Globe, LineChart, Calendar, Instagram,
-  Briefcase, FileText, FilePlus, UserPlus, Package,
+  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +24,7 @@ const mainItems = [
 const cadastroItems = [
   { title: "Serviços", url: "/crm/servicos", icon: Package },
   { title: "Usuários", url: "/crm/usuarios", icon: UserPlus },
+  { title: "Base de Conhecimento", url: "/crm/base-conhecimento", icon: BookOpen },
 ];
 
 const toolItems = [

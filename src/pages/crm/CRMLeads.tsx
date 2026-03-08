@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, MessageCircle } from "lucide-react";
 
 const CRMLeads = () => {
   const [leads, setLeads] = useState<any[]>([]);
@@ -53,6 +54,7 @@ const CRMLeads = () => {
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">WhatsApp</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ferramenta</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Data</th>
+                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -69,6 +71,17 @@ const CRMLeads = () => {
                       <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{lead.ferramenta}</span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">{new Date(lead.criado_em).toLocaleDateString("pt-BR")}</td>
+                    <td className="py-3 px-4 text-right">
+                      <a
+                        href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${lead.nome}! Aqui é da Lápis Criativo. Tudo bem?`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="ghost" size="sm" className="text-green-500 hover:text-green-400">
+                          <MessageCircle className="w-4 h-4" /> Conversar
+                        </Button>
+                      </a>
+                    </td>
                   </tr>
                 ))}
               </tbody>

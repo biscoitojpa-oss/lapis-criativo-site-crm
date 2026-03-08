@@ -22,6 +22,7 @@ import ContratoDetalhe from "./pages/crm/ContratoDetalhe";
 import CRMServicos from "./pages/crm/CRMServicos";
 import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
+import CRMBaseConhecimento from "./pages/crm/CRMBaseConhecimento";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="contratos/:contratoId" element={<ContratoDetalhe />} />
               <Route path="servicos" element={<CRMServicos />} />
               <Route path="usuarios" element={<CRMUsuarios />} />
+              <Route path="base-conhecimento" element={<CRMBaseConhecimento />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

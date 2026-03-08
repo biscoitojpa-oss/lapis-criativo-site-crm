@@ -27,6 +27,11 @@ const cadastroItems = [
   { title: "Base de Conhecimento", url: "/crm/base-conhecimento", icon: BookOpen },
 ];
 
+const agentItems = [
+  { title: "Criativo X", url: "/crm/criativo-x", icon: Bot },
+  { title: "Buscador de Leads", url: "/crm/buscador-leads", icon: Crosshair },
+];
+
 const toolItems = [
   { title: "Google Meu Negócio", url: "/crm/ferramentas/google-business", icon: MapPin },
   { title: "Instagram", url: "/crm/ferramentas/instagram-analyzer", icon: Instagram },

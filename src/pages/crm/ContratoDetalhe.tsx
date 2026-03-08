@@ -149,6 +149,27 @@ const ContratoDetalhe = () => {
           <p className="text-sm text-muted-foreground">{contrato.observacoes}</p>
         </div>
       )}
+
+      {/* Signature status */}
+      <div className="glass-card p-6">
+        <h2 className="font-semibold text-lg mb-3">Assinatura Digital</h2>
+        {contrato.assinatura_cliente ? (
+          <div className="flex items-center gap-4">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+            <div>
+              <p className="text-sm font-medium text-green-400">Contrato assinado pelo cliente</p>
+              <p className="text-xs text-muted-foreground">{contrato.assinado_em ? new Date(contrato.assinado_em).toLocaleString("pt-BR") : ""}</p>
+            </div>
+            <div className="ml-auto border border-border/50 rounded-lg p-2 bg-white">
+              <img src={contrato.assinatura_cliente} alt="Assinatura" className="max-h-16" />
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Aguardando assinatura do cliente. Envie o link de assinatura acima.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

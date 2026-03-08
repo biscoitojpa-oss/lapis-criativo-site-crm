@@ -606,7 +606,7 @@ const CRMWhatsApp = () => {
           ) : (
             <div className="space-y-3">
               {instances.map((inst, i) => {
-                const name = inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
+                const name = inst.name || inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
                 const state = connectionStates[name] || "unknown";
                 return (
                   <Card key={name} className="bg-card/50 border-border/50">

@@ -82,7 +82,7 @@ export function CRMSidebar() {
         {renderGroup("Principal", mainItems)}
         {renderGroup("Cadastros", cadastroItems)}
         {renderGroup("Agentes", agentItems)}
-        {renderGroup("Ferramentas IA", toolItems)}
+        
       </SidebarContent>
       <SidebarFooter>
         {!collapsed && profile && (

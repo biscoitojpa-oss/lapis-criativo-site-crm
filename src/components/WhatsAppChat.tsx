@@ -49,6 +49,8 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 
+  const HIDDEN_INSTANCES = ["daher"];
+
   // Fetch available instances
   useEffect(() => {
     const fetchInstances = async () => {
@@ -63,19 +65,20 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
         });
         if (resp.ok) {
           const data = await resp.json();
-          const list: EvolutionInstance[] = (data.instances || data || []).map((i: any) => ({
-            name: i.name || i.instanceName || i.instance?.instanceName || "",
-            connectionStatus: i.connectionStatus || i.state || "unknown",
-          }));
+          const list: EvolutionInstance[] = (data.instances || data || [])
+            .map((i: any) => ({
+              name: i.name || i.instanceName || i.instance?.instanceName || "",
+              connectionStatus: i.connectionStatus || i.state || "unknown",
+            }))
+            .filter((i: EvolutionInstance) => !HIDDEN_INSTANCES.some(h => i.name.toLowerCase() === h.toLowerCase()));
           setInstances(list);
           if (!selectedInstance && list.length > 0) {
-            // Pre-select first connected instance or first one
             const connected = list.find((i) => i.connectionStatus === "open");
             setSelectedInstance(connected?.name || list[0].name);
           }
         }
       } catch {
-        // silently fail, user can still type instance name
+        // silently fail
       }
     };
     fetchInstances();

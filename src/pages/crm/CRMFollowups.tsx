@@ -139,13 +139,11 @@ const CRMFollowups = () => {
   }), [filteredFollowups]);
 
   const autoMetrics = useMemo(() => {
-    const autoFollowups = followups.filter(f => f.origem === "auto");
+    const autoFollowups = filteredFollowups.filter(f => f.origem === "auto");
     const totalAuto = autoFollowups.length;
     const enviados = autoFollowups.filter(f => f.status === "enviado").length;
-    // "cancelado" with error containing "respondeu" means client replied
     const respondidos = autoFollowups.filter(f => f.status === "cancelado" && f.erro?.includes("respondeu")).length;
     
-    // Desistidos: phones that received max follow-ups (3+) and never responded
     const phonesSent = new Map<string, number>();
     for (const f of autoFollowups) {
       if (f.status === "enviado") {
@@ -158,7 +156,7 @@ const CRMFollowups = () => {
     const taxaResposta = enviados > 0 ? Math.round((respondidos / enviados) * 100) : 0;
     
     return { totalAuto, enviados, respondidos, desistidos, taxaResposta };
-  }, [followups]);
+  }, [filteredFollowups]);
 
   const addFollowup = async () => {
     if (!newPhone.trim() || !newMessage.trim() || !newDate) {

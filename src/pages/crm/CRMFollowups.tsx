@@ -441,7 +441,7 @@ const CRMFollowups = () => {
             <p className="text-sm text-muted-foreground text-center py-8">Nenhum follow-up agendado</p>
           ) : (
             <div className="space-y-3">
-              {followups.map(fu => (
+              {filteredFollowups.map(fu => (
                 <div key={fu.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

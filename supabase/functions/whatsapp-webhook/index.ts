@@ -184,6 +184,79 @@ serve(async (req) => {
       tipo: msgType,
     });
 
+    // ===== HUMAN HANDOFF CHECK =====
+    // Check if human handoff is active for this phone
+    const { data: handoff } = await supabase
+      .from("whatsapp_handoff")
+      .select("*")
+      .eq("telefone", phone)
+      .eq("ativo", true)
+      .single();
+
+    if (handoff) {
+      console.log(`Handoff ativo para ${phone}, agente pausado. Aguardando humano.`);
+      return new Response(JSON.stringify({ ok: true, handoff: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if user wants to talk to a human
+    const humanKeywords = [
+      "falar com humano", "falar com alguém", "falar com alguem", "atendente",
+      "falar com pessoa", "pessoa real", "atendimento humano", "falar com a equipe",
+      "quero falar com", "consultor", "falar com um consultor", "humano",
+      "atendente real", "pessoa de verdade",
+    ];
+    const lowerText = messageText.toLowerCase();
+    const wantsHuman = humanKeywords.some(kw => lowerText.includes(kw));
+
+    if (wantsHuman) {
+      // Activate handoff
+      await supabase.from("whatsapp_handoff").upsert(
+        { telefone: phone, ativo: true, ativado_em: new Date().toISOString() },
+        { onConflict: "telefone" }
+      );
+
+      // Send farewell message
+      const handoffMsg = "Entendido! 😊 Vou transferir você para um de nossos consultores. Ele vai te responder em breve. Fique à vontade!";
+      await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
+        method: "POST",
+        headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ number: phone, text: handoffMsg }),
+      });
+
+      await supabase.from("whatsapp_mensagens").insert({
+        telefone: phone, nome_contato: "Criativo X",
+        mensagem: handoffMsg, direcao: "enviada", instancia: instanceName,
+      });
+
+      // Notify team
+      const { data: profiles } = await supabase.from("profiles").select("user_id");
+      if (profiles) {
+        for (const p of profiles) {
+          await supabase.from("notificacoes").insert({
+            user_id: p.user_id,
+            titulo: "Atendimento Humano Solicitado",
+            mensagem: `${pushName} (${phone}) pediu para falar com um humano.`,
+            tipo: "handoff",
+            link: `/crm/clientes`,
+          });
+        }
+      }
+
+      console.log(`Handoff ativado para ${phone}`);
+      return new Response(JSON.stringify({ ok: true, handoff: "activated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+      telefone: phone,
+      nome_contato: pushName,
+      mensagem: incomingLabel,
+      direcao: "recebida",
+      instancia: instanceName,
+      tipo: msgType,
+    });
+
     // Build AI messages array
     const aiMessages: any[] = [];
 

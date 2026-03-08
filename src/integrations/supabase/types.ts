@@ -628,6 +628,57 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_followups: {
+        Row: {
+          agendado_para: string
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          enviado_em: string | null
+          erro: string | null
+          id: string
+          instancia: string
+          mensagem: string
+          motivo: string | null
+          nome_contato: string | null
+          origem: string | null
+          status: string
+          telefone: string
+        }
+        Insert: {
+          agendado_para: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          instancia?: string
+          mensagem: string
+          motivo?: string | null
+          nome_contato?: string | null
+          origem?: string | null
+          status?: string
+          telefone: string
+        }
+        Update: {
+          agendado_para?: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          instancia?: string
+          mensagem?: string
+          motivo?: string | null
+          nome_contato?: string | null
+          origem?: string | null
+          status?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       whatsapp_handoff: {
         Row: {
           ativado_em: string

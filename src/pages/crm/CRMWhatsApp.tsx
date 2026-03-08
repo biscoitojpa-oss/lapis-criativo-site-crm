@@ -31,6 +31,7 @@ interface QueueItem {
   instancia: string;
   status: string;
   tentativas: number;
+  max_tentativas: number;
   erro: string | null;
   agendado_para: string;
   enviado_em: string | null;

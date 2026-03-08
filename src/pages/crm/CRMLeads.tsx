@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MessageCircle, X } from "lucide-react";
+import { Search, MessageCircle, Trash2, MapPin, Instagram } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import WhatsAppChat from "@/components/WhatsAppChat";
 
 const CRMLeads = () => {
@@ -12,29 +13,50 @@ const CRMLeads = () => {
   const [loading, setLoading] = useState(true);
   const [chatLead, setChatLead] = useState<any>(null);
 
+  const fetchLeads = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("leads")
+      .select("*")
+      .in("ferramenta", ["Google", "Instagram"])
+      .order("criado_em", { ascending: false });
+    setLeads(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    supabase.from("leads").select("*").order("criado_em", { ascending: false }).then(({ data }) => {
-      setLeads(data || []);
-      setLoading(false);
-    });
+    fetchLeads();
   }, []);
 
   const filtered = leads.filter((l) =>
     l.nome.toLowerCase().includes(search.toLowerCase()) ||
-    l.email.toLowerCase().includes(search.toLowerCase()) ||
+    (l.email || "").toLowerCase().includes(search.toLowerCase()) ||
     l.ferramenta.toLowerCase().includes(search.toLowerCase())
   );
 
-  const canChat = (lead: any) => {
+  const hasWhatsapp = (lead: any) => {
     const phone = lead.whatsapp?.replace(/\D/g, "");
-    return phone && phone !== "interno" && !phone.includes("@");
+    return phone && phone !== "semwhatsapp" && phone.length >= 10;
   };
+
+  const deleteLead = async (id: string) => {
+    const { error } = await supabase.from("leads").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao excluir lead");
+      return;
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== id));
+    toast.success("Lead removido");
+  };
+
+  const ferramentaIcon = (f: string) =>
+    f === "Google" ? <MapPin className="w-3 h-3" /> : <Instagram className="w-3 h-3" />;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Leads</h1>
-        <p className="text-muted-foreground">Todos os leads capturados pelas ferramentas de IA</p>
+        <p className="text-muted-foreground">Leads capturados pelo Buscador (Google e Instagram)</p>
       </div>
 
       <div className="relative max-w-md">
@@ -51,7 +73,9 @@ const CRMLeads = () => {
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">Carregando...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">Nenhum lead encontrado.</div>
+          <div className="p-8 text-center text-muted-foreground">
+            Nenhum lead encontrado. Use o <strong>Buscador de Leads</strong> para pesquisar e salvar novos leads.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -69,20 +93,29 @@ const CRMLeads = () => {
                 {filtered.map((lead) => (
                   <tr key={lead.id} className="border-b border-border/20 hover:bg-muted/10">
                     <td className="py-3 px-4 font-medium">{lead.nome}</td>
-                    <td className="py-3 px-4 text-muted-foreground">{lead.email}</td>
-                    <td className="py-3 px-4 text-emerald-400">{lead.whatsapp}</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      {lead.email && !lead.email.includes("sem-email") ? lead.email : <span className="text-muted-foreground/50">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-emerald-400">
+                      {hasWhatsapp(lead) ? lead.whatsapp : <span className="text-muted-foreground/50">—</span>}
+                    </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{lead.ferramenta}</span>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">
+                        {ferramentaIcon(lead.ferramenta)} {lead.ferramenta}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">{new Date(lead.criado_em).toLocaleDateString("pt-BR")}</td>
                     <td className="py-3 px-4 text-right">
-                      {canChat(lead) ? (
-                        <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300" onClick={() => setChatLead(lead)}>
-                          <MessageCircle className="w-4 h-4" /> Conversar
+                      <div className="flex items-center justify-end gap-1">
+                        {hasWhatsapp(lead) && (
+                          <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300 text-xs" onClick={() => setChatLead(lead)}>
+                            <MessageCircle className="w-4 h-4 mr-1" /> Chat
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80 text-xs" onClick={() => deleteLead(lead.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -92,17 +125,13 @@ const CRMLeads = () => {
         )}
       </div>
 
-      {/* WhatsApp Chat Dialog */}
       <Dialog open={!!chatLead} onOpenChange={(open) => { if (!open) setChatLead(null); }}>
         <DialogContent className="sm:max-w-lg p-0 overflow-hidden" style={{ height: "600px" }}>
           <DialogHeader className="sr-only">
             <DialogTitle>Chat WhatsApp - {chatLead?.nome}</DialogTitle>
           </DialogHeader>
           {chatLead && (
-            <WhatsAppChat
-              phone={chatLead.whatsapp}
-              contactName={chatLead.nome}
-            />
+            <WhatsAppChat phone={chatLead.whatsapp} contactName={chatLead.nome} />
           )}
         </DialogContent>
       </Dialog>

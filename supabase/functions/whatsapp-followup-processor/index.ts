@@ -212,12 +212,12 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
           }
         }
 
-        // Schedule for next business morning at 10:00
+        // Schedule using configurable hours
         const scheduleDate = new Date(now.getTime() + 2 * 60 * 60 * 1000); // minimum 2h from now
-        if (scheduleDate.getHours() < 10) scheduleDate.setHours(10, 0, 0, 0);
-        if (scheduleDate.getHours() > 19) {
+        if (scheduleDate.getHours() < FOLLOWUP_HOUR_START) scheduleDate.setHours(FOLLOWUP_HOUR_START, 0, 0, 0);
+        if (scheduleDate.getHours() > FOLLOWUP_HOUR_END) {
           scheduleDate.setDate(scheduleDate.getDate() + 1);
-          scheduleDate.setHours(10, 0, 0, 0);
+          scheduleDate.setHours(FOLLOWUP_HOUR_START, 0, 0, 0);
         }
 
         await supabase.from("whatsapp_followups").insert({

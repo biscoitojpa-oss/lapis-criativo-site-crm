@@ -23,7 +23,7 @@ const ContratoDetalhe = () => {
     if (!contratoId) return;
     Promise.all([
       supabase.from("contratos").select("*, clientes(nome, empresa, cnpj_cpf, email)").eq("id", contratoId).single(),
-      supabase.from("contrato_itens").select("*").eq("contrato_id", contratoId),
+      supabase.from("contrato_itens").select("*, servicos(nome, prazo_entrega, nivel_complexidade, entregaveis, requer_reuniao, categoria)").eq("contrato_id", contratoId),
     ]).then(([cRes, iRes]) => {
       setContrato(cRes.data);
       setItens(iRes.data || []);

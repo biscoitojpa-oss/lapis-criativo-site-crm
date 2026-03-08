@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FilePlus } from "lucide-react";
+import { ArrowLeft, FilePlus, Download } from "lucide-react";
 import { toast } from "sonner";
+import { generateContratoPDF } from "@/lib/pdf-generator";
 
 const statusColors: Record<string, string> = {
   ativo: "bg-green-500/20 text-green-400",
@@ -21,7 +22,7 @@ const ContratoDetalhe = () => {
   useEffect(() => {
     if (!contratoId) return;
     Promise.all([
-      supabase.from("contratos").select("*, clientes(nome, empresa, cnpj_cpf)").eq("id", contratoId).single(),
+      supabase.from("contratos").select("*, clientes(nome, empresa, cnpj_cpf, email)").eq("id", contratoId).single(),
       supabase.from("contrato_itens").select("*").eq("contrato_id", contratoId),
     ]).then(([cRes, iRes]) => {
       setContrato(cRes.data);
@@ -34,6 +35,11 @@ const ContratoDetalhe = () => {
     await supabase.from("contratos").update({ status } as any).eq("id", contratoId!);
     setContrato({ ...contrato, status });
     toast.success(`Status atualizado para ${status}`);
+  };
+
+  const handleDownloadPDF = () => {
+    generateContratoPDF(contrato, itens, contrato.clientes);
+    toast.success("PDF gerado com sucesso!");
   };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
@@ -81,6 +87,9 @@ const ContratoDetalhe = () => {
         <div className="glass-card p-6">
           <h2 className="font-semibold text-lg mb-3">Ações</h2>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4" /> Baixar PDF
+            </Button>
             {contrato.status === "ativo" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => updateStatus("suspenso")} className="text-yellow-500">Suspender</Button>

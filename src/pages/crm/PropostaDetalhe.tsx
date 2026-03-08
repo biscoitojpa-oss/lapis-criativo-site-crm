@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FilePlus } from "lucide-react";
+import { ArrowLeft, FileText, FilePlus, Download, Send } from "lucide-react";
 import { toast } from "sonner";
+import { generatePropostaPDF } from "@/lib/pdf-generator";
+import EnviarPropostaDialog from "@/components/EnviarPropostaDialog";
 
 const statusColors: Record<string, string> = {
   rascunho: "bg-muted text-muted-foreground",
@@ -19,6 +21,7 @@ const PropostaDetalhe = () => {
   const [proposta, setProposta] = useState<any>(null);
   const [itens, setItens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   useEffect(() => {
     if (!propostaId) return;
@@ -40,6 +43,11 @@ const PropostaDetalhe = () => {
 
   const gerarContrato = () => {
     navigate(`/crm/contratos/novo?proposta=${propostaId}&cliente=${proposta.cliente_id}`);
+  };
+
+  const handleDownloadPDF = () => {
+    generatePropostaPDF(proposta, itens, proposta.clientes);
+    toast.success("PDF gerado com sucesso!");
   };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
@@ -80,6 +88,12 @@ const PropostaDetalhe = () => {
         <div className="glass-card p-6">
           <h2 className="font-semibold text-lg mb-3">Ações</h2>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4" /> Baixar PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setEmailOpen(true)}>
+              <Send className="w-4 h-4" /> Enviar por Email
+            </Button>
             {proposta.status === "rascunho" && <Button variant="outline" size="sm" onClick={() => updateStatus("enviada")}>Marcar como Enviada</Button>}
             {proposta.status === "enviada" && (
               <>
@@ -126,6 +140,16 @@ const PropostaDetalhe = () => {
           </tfoot>
         </table>
       </div>
+
+      {proposta && (
+        <EnviarPropostaDialog
+          open={emailOpen}
+          onOpenChange={setEmailOpen}
+          proposta={proposta}
+          cliente={cliente}
+          itens={itens}
+        />
+      )}
     </div>
   );
 };

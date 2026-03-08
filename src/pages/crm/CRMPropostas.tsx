@@ -67,10 +67,10 @@ const CRMPropostas = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="rascunho">Rascunho</SelectItem>
+            <SelectItem value="rascunho">Gerada</SelectItem>
             <SelectItem value="enviada">Enviada</SelectItem>
-            <SelectItem value="aprovada">Aprovada</SelectItem>
-            <SelectItem value="recusada">Recusada</SelectItem>
+            <SelectItem value="aprovada">Aceita</SelectItem>
+            <SelectItem value="recusada">Não Aceita</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
           </SelectContent>
         </Select>

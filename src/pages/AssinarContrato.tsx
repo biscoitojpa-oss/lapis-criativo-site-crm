@@ -39,6 +39,9 @@ const AssinarContrato = () => {
           .select("*")
           .eq("contrato_id", data.id);
         setItens(itensData || []);
+        // Fetch payment config
+        const { data: pagData } = await supabase.from("config_pagamentos").select("*").limit(1).single();
+        if (pagData) setConfigPag(pagData);
         setLoading(false);
       });
   }, [token]);

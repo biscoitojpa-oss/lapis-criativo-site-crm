@@ -98,6 +98,36 @@ export type Database = {
         }
         Relationships: []
       }
+      config_pagamentos: {
+        Row: {
+          atualizado_em: string
+          banco: string | null
+          chave_pix: string | null
+          criado_em: string
+          id: string
+          link_pagamento_cartao: string | null
+          nome_recebedor: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          banco?: string | null
+          chave_pix?: string | null
+          criado_em?: string
+          id?: string
+          link_pagamento_cartao?: string | null
+          nome_recebedor?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          banco?: string | null
+          chave_pix?: string | null
+          criado_em?: string
+          id?: string
+          link_pagamento_cartao?: string | null
+          nome_recebedor?: string | null
+        }
+        Relationships: []
+      }
       contrato_itens: {
         Row: {
           contrato_id: string

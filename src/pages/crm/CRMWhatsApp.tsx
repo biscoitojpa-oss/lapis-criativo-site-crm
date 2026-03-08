@@ -457,8 +457,9 @@ const CRMWhatsApp = () => {
         <p className="text-sm text-muted-foreground">Gerencie instâncias, métricas do agente e configurações de envio</p>
       </div>
 
-      <Tabs defaultValue="metricas" className="space-y-4">
+      <Tabs defaultValue="conversas" className="space-y-4">
         <TabsList className="bg-muted/30 border border-border/50">
+          <TabsTrigger value="conversas"><MessageCircle className="w-4 h-4 mr-1.5" />Conversas</TabsTrigger>
           <TabsTrigger value="metricas"><BarChart3 className="w-4 h-4 mr-1.5" />Métricas</TabsTrigger>
           <TabsTrigger value="instancias"><Radio className="w-4 h-4 mr-1.5" />Instâncias</TabsTrigger>
           <TabsTrigger value="anti-ban"><Shield className="w-4 h-4 mr-1.5" />Anti-Banimento</TabsTrigger>

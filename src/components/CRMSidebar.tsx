@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Brain, BarChart3, LogOut, Pencil,
   MapPin, Search, Target, Globe, LineChart, Calendar, Instagram,
-  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen,
+  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen, Bot, Crosshair,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,11 @@ const cadastroItems = [
   { title: "Serviços", url: "/crm/servicos", icon: Package },
   { title: "Usuários", url: "/crm/usuarios", icon: UserPlus },
   { title: "Base de Conhecimento", url: "/crm/base-conhecimento", icon: BookOpen },
+];
+
+const agentItems = [
+  { title: "Criativo X", url: "/crm/criativo-x", icon: Bot },
+  { title: "Buscador de Leads", url: "/crm/buscador-leads", icon: Crosshair },
 ];
 
 const toolItems = [
@@ -87,6 +92,7 @@ export function CRMSidebar() {
         </div>
         {renderGroup("Principal", mainItems)}
         {renderGroup("Cadastros", cadastroItems)}
+        {renderGroup("Agentes", agentItems)}
         {renderGroup("Ferramentas IA", toolItems)}
       </SidebarContent>
       <SidebarFooter>

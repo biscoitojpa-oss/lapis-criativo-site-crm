@@ -23,6 +23,8 @@ import CRMServicos from "./pages/crm/CRMServicos";
 import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
 import CRMBaseConhecimento from "./pages/crm/CRMBaseConhecimento";
+import CRMCriativoX from "./pages/crm/CRMCriativoX";
+import CRMBuscadorLeads from "./pages/crm/CRMBuscadorLeads";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="servicos" element={<CRMServicos />} />
               <Route path="usuarios" element={<CRMUsuarios />} />
               <Route path="base-conhecimento" element={<CRMBaseConhecimento />} />
+              <Route path="criativo-x" element={<CRMCriativoX />} />
+              <Route path="buscador-leads" element={<CRMBuscadorLeads />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

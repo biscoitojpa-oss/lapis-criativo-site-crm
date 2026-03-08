@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      base_conhecimento: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          categoria: string
+          conteudo: string
+          criado_em: string
+          id: string
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string
+          conteudo: string
+          criado_em?: string
+          id?: string
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string
+          conteudo?: string
+          criado_em?: string
+          id?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           ativo: boolean

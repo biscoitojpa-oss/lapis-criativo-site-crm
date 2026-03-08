@@ -34,6 +34,21 @@ serve(async (req) => {
       case "instanceInfo":
         url = `${EVOLUTION_API_URL}/instance/connect/${instanceName}`;
         break;
+      case "createInstance":
+        url = `${EVOLUTION_API_URL}/instance/create`;
+        method = "POST";
+        body = JSON.stringify({
+          instanceName: data?.instanceName || instanceName,
+          integration: data?.integration || "WHATSAPP-BAILEYS",
+          qrcode: true,
+          ...(data?.webhookUrl ? { webhook: { url: data.webhookUrl, byEvents: false, base64: false, events: ["MESSAGES_UPSERT"] } } : {}),
+          ...(data || {}),
+        });
+        break;
+      case "deleteInstance":
+        url = `${EVOLUTION_API_URL}/instance/delete/${instanceName}`;
+        method = "DELETE";
+        break;
       case "sendTest":
         url = `${EVOLUTION_API_URL}/message/sendText/${instanceName}`;
         method = "POST";
@@ -46,6 +61,11 @@ serve(async (req) => {
       case "restart":
         url = `${EVOLUTION_API_URL}/instance/restart/${instanceName}`;
         method = "PUT";
+        break;
+      case "setWebhook":
+        url = `${EVOLUTION_API_URL}/webhook/set/${instanceName}`;
+        method = "POST";
+        body = JSON.stringify(data);
         break;
       default:
         throw new Error(`Ação desconhecida: ${action}`);

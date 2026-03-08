@@ -24,8 +24,8 @@ const AIToolsSection = () => {
             Ferramentas de <span className="neon-text">Marketing com IA</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Use inteligência artificial para analisar, otimizar e transformar sua presença digital.
-            Ferramentas gratuitas para impulsionar seu negócio.
+            Experimente nossas ferramentas gratuitas com inteligência artificial.
+            Versão completa disponível no painel da agência.
           </p>
         </div>
 

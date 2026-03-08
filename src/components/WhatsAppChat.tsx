@@ -3,6 +3,7 @@ import { Send, Phone, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,19 +19,67 @@ interface Message {
   criado_em: string;
 }
 
+interface EvolutionInstance {
+  name: string;
+  connectionStatus: string;
+}
+
 interface WhatsAppChatProps {
   phone: string;
   contactName?: string;
   instanceName?: string;
 }
 
-const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsAppChatProps) => {
+/** Garante que o número tenha DDI 55 (Brasil) */
+const normalizePhone = (raw: string): string => {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  // Se começa com 0, remove
+  const withoutZero = digits.startsWith("0") ? digits.slice(1) : digits;
+  return `55${withoutZero}`;
+};
+
+const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: WhatsAppChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [instances, setInstances] = useState<EvolutionInstance[]>([]);
+  const [selectedInstance, setSelectedInstance] = useState(defaultInstance || "");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const normalizedPhone = phone.replace(/\D/g, "");
+  const normalizedPhone = normalizePhone(phone);
+
+  // Fetch available instances
+  useEffect(() => {
+    const fetchInstances = async () => {
+      try {
+        const resp = await fetch(EVOLUTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ action: "fetchInstances" }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const list: EvolutionInstance[] = (data.instances || data || []).map((i: any) => ({
+            name: i.name || i.instanceName || i.instance?.instanceName || "",
+            connectionStatus: i.connectionStatus || i.state || "unknown",
+          }));
+          setInstances(list);
+          if (!selectedInstance && list.length > 0) {
+            // Pre-select first connected instance or first one
+            const connected = list.find((i) => i.connectionStatus === "open");
+            setSelectedInstance(connected?.name || list[0].name);
+          }
+        }
+      } catch {
+        // silently fail, user can still type instance name
+      }
+    };
+    fetchInstances();
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
@@ -48,7 +97,6 @@ const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsApp
     if (!normalizedPhone) return;
     fetchMessages();
 
-    // Realtime subscription
     const channel = supabase
       .channel(`whatsapp-${normalizedPhone}`)
       .on(
@@ -75,10 +123,13 @@ const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsApp
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || sending) return;
+    if (!selectedInstance) {
+      toast.error("Selecione uma instância antes de enviar");
+      return;
+    }
 
     setSending(true);
     try {
-      // Send via Evolution API
       const resp = await fetch(EVOLUTION_URL, {
         method: "POST",
         headers: {
@@ -87,7 +138,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsApp
         },
         body: JSON.stringify({
           action: "sendTest",
-          instanceName,
+          instanceName: selectedInstance,
           data: { number: normalizedPhone, text },
         }),
       });
@@ -97,13 +148,12 @@ const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsApp
         throw new Error(err.error || "Erro ao enviar");
       }
 
-      // Save to database
       await supabase.from("whatsapp_mensagens").insert({
         telefone: normalizedPhone,
         nome_contato: contactName || null,
         mensagem: text,
         direcao: "enviada",
-        instancia: instanceName,
+        instancia: selectedInstance,
       });
 
       setInput("");
@@ -128,9 +178,21 @@ const WhatsAppChat = ({ phone, contactName, instanceName = "default" }: WhatsApp
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-            {instanceName}
-          </Badge>
+          <Select value={selectedInstance} onValueChange={setSelectedInstance}>
+            <SelectTrigger className="h-8 w-[160px] text-xs bg-background/50 border-border/50">
+              <SelectValue placeholder="Instância..." />
+            </SelectTrigger>
+            <SelectContent>
+              {instances.map((inst) => (
+                <SelectItem key={inst.name} value={inst.name}>
+                  <span className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${inst.connectionStatus === "open" ? "bg-emerald-400" : "bg-muted-foreground"}`} />
+                    {inst.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchMessages}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>

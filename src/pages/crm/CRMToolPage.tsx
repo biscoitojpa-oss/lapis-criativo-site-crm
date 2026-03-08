@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Brain } from "lucide-react";
+import { ArrowLeft, Brain, Download } from "lucide-react";
 import {
   MapPin, Search, Target, Globe, BarChart3, Pencil, LineChart, Users,
   Calendar, Instagram,
@@ -12,6 +12,7 @@ import { AI_TOOLS, streamAITool } from "@/lib/ai-tools";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
+import jsPDF from "jspdf";
 
 const iconMap: Record<string, React.ElementType> = {
   MapPin, Search, Target, Globe, BarChart3, Pencil, LineChart, Users, Calendar, Instagram,
@@ -25,6 +26,12 @@ const CRMToolPage = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Clear result when tool changes
+  useEffect(() => {
+    setResult("");
+    setFormData({});
+  }, [toolId]);
 
   if (!tool) {
     return (
@@ -42,7 +49,6 @@ const CRMToolPage = () => {
     setIsLoading(true);
     setResult("");
 
-    // No lead capture needed in CRM - user is already authenticated
     await streamAITool({
       tool: tool.id,
       input: formData,
@@ -54,6 +60,88 @@ const CRMToolPage = () => {
         setIsLoading(false);
       },
     });
+  };
+
+  const handleExportPDF = () => {
+    if (!result) return;
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFillColor(30, 25, 50);
+    doc.rect(0, 0, 210, 35, "F");
+    doc.setFillColor(127, 62, 224);
+    doc.rect(0, 33, 210, 3, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Lápis Criativo", 20, 18);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Agência de Marketing Digital", 20, 26);
+
+    doc.setFontSize(11);
+    doc.text(tool.title, 190, 18, { align: "right" });
+
+    // Input data
+    let y = 48;
+    doc.setTextColor(127, 62, 224);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Dados de Entrada", 20, y);
+    y += 8;
+
+    doc.setTextColor(80, 80, 100);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    tool.fields.forEach((field) => {
+      const value = formData[field.name] || "—";
+      doc.text(`${field.label}: ${value}`, 20, y);
+      y += 6;
+    });
+
+    y += 6;
+    doc.setTextColor(127, 62, 224);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resultado da Análise", 20, y);
+    y += 8;
+
+    // Result text - strip markdown
+    doc.setTextColor(30, 25, 50);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const cleanText = result
+      .replace(/#{1,6}\s/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .replace(/`/g, "");
+    const lines = doc.splitTextToSize(cleanText, 170);
+    
+    for (const line of lines) {
+      if (y > 275) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, 20, y);
+      y += 5;
+    }
+
+    // Footer on all pages
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFillColor(127, 62, 224);
+      doc.rect(0, 284, 210, 13, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text("Lápis Criativo — Agência de Marketing Digital", 20, 291);
+      doc.text(`Página ${i} de ${pageCount}`, 190, 291, { align: "right" });
+    }
+
+    const date = new Date().toISOString().split("T")[0];
+    doc.save(`${tool.title.replace(/\s+/g, "_")}_${date}.pdf`);
+    toast.success("PDF exportado com sucesso!");
   };
 
   return (
@@ -102,9 +190,16 @@ const CRMToolPage = () => {
         </form>
 
         <div className="glass-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Brain className="w-5 h-5 text-primary" />
-            <h2 className="font-display font-semibold">Resultado</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-semibold">Resultado</h2>
+            </div>
+            {result && !isLoading && (
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <Download className="w-4 h-4" /> Exportar PDF
+              </Button>
+            )}
           </div>
           {!result && !isLoading && (
             <p className="text-muted-foreground text-sm">Preencha os dados e clique em gerar para ver a análise.</p>

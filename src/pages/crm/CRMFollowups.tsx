@@ -325,6 +325,50 @@ const CRMFollowups = () => {
         </div>
       </div>
 
+      {/* Filters */}
+      <Card className="glass-card">
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">Filtros:</span>
+            </div>
+            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo período</SelectItem>
+                <SelectItem value="week">Última semana</SelectItem>
+                <SelectItem value="month">Último mês</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={originFilter} onValueChange={(v) => setOriginFilter(v as OriginFilter)}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas origens</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="auto">Automático</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="agendado">Agendado</SelectItem>
+                <SelectItem value="enviado">Enviado</SelectItem>
+                <SelectItem value="erro">Erro</SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+            {(periodFilter !== "all" || originFilter !== "all" || statusFilter !== "all") && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setPeriodFilter("all"); setOriginFilter("all"); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">{filteredFollowups.length} resultado(s)</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="glass-card"><CardContent className="pt-4 text-center">

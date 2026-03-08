@@ -236,7 +236,7 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any, c
   doc.save(`Proposta_${proposta.numero}_${cliente?.nome || "cliente"}.pdf`);
 }
 
-export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
+export function generateContratoPDF(contrato: any, itens: any[], cliente: any, configPag?: any) {
   const doc = new jsPDF();
   addHeader(doc, "Contrato", contrato.numero);
   let y = 55;

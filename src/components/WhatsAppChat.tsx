@@ -46,6 +46,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const [loading, setLoading] = useState(true);
   const [instances, setInstances] = useState<EvolutionInstance[]>([]);
   const [selectedInstance, setSelectedInstance] = useState(defaultInstance || "");
+  const [handoffActive, setHandoffActive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 

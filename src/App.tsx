@@ -11,6 +11,16 @@ import CRMDashboard from "./pages/crm/CRMDashboard";
 import CRMLeads from "./pages/crm/CRMLeads";
 import CRMTools from "./pages/crm/CRMTools";
 import CRMToolPage from "./pages/crm/CRMToolPage";
+import CRMClientes from "./pages/crm/CRMClientes";
+import ClienteDetalhe from "./pages/crm/ClienteDetalhe";
+import CRMPropostas from "./pages/crm/CRMPropostas";
+import PropostaForm from "./pages/crm/PropostaForm";
+import PropostaDetalhe from "./pages/crm/PropostaDetalhe";
+import CRMContratos from "./pages/crm/CRMContratos";
+import ContratoForm from "./pages/crm/ContratoForm";
+import ContratoDetalhe from "./pages/crm/ContratoDetalhe";
+import CRMServicos from "./pages/crm/CRMServicos";
+import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -30,6 +40,16 @@ const App = () => (
             <Route path="/crm" element={<ProtectedRoute><CRMLayout /></ProtectedRoute>}>
               <Route index element={<CRMDashboard />} />
               <Route path="leads" element={<CRMLeads />} />
+              <Route path="clientes" element={<CRMClientes />} />
+              <Route path="clientes/:clienteId" element={<ClienteDetalhe />} />
+              <Route path="propostas" element={<CRMPropostas />} />
+              <Route path="propostas/nova" element={<PropostaForm />} />
+              <Route path="propostas/:propostaId" element={<PropostaDetalhe />} />
+              <Route path="contratos" element={<CRMContratos />} />
+              <Route path="contratos/novo" element={<ContratoForm />} />
+              <Route path="contratos/:contratoId" element={<ContratoDetalhe />} />
+              <Route path="servicos" element={<CRMServicos />} />
+              <Route path="usuarios" element={<CRMUsuarios />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

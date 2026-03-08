@@ -61,6 +61,7 @@ const App = () => (
               <Route path="criativo-x" element={<CRMCriativoX />} />
               <Route path="buscador-leads" element={<CRMBuscadorLeads />} />
               <Route path="whatsapp" element={<CRMWhatsApp />} />
+              <Route path="pagamentos" element={<CRMPagamentos />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FilePlus, Download } from "lucide-react";
+import { ArrowLeft, FilePlus, Download, Link2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { generateContratoPDF } from "@/lib/pdf-generator";
 

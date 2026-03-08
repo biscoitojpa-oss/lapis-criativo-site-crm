@@ -27,6 +27,7 @@ import CRMCriativoX from "./pages/crm/CRMCriativoX";
 import CRMBuscadorLeads from "./pages/crm/CRMBuscadorLeads";
 import CRMWhatsApp from "./pages/crm/CRMWhatsApp";
 import CRMPagamentos from "./pages/crm/CRMPagamentos";
+import CRMFollowups from "./pages/crm/CRMFollowups";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";

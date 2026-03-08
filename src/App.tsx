@@ -22,6 +22,7 @@ import ContratoDetalhe from "./pages/crm/ContratoDetalhe";
 import CRMServicos from "./pages/crm/CRMServicos";
 import CRMUsuarios from "./pages/crm/CRMUsuarios";
 import DiagnosticoPage from "./pages/DiagnosticoPage";
+import CRMBaseConhecimento from "./pages/crm/CRMBaseConhecimento";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";

@@ -4,7 +4,7 @@ import autoTable from "jspdf-autotable";
 const BRAND = {
   name: "Lápis Criativo",
   tagline: "Agência de Marketing Digital",
-  primaryColor: [127, 62, 224] as [number, number, number], // purple
+  primaryColor: [127, 62, 224] as [number, number, number],
   darkColor: [30, 25, 50] as [number, number, number],
   grayColor: [120, 120, 140] as [number, number, number],
 };
@@ -55,6 +55,20 @@ function addSection(doc: jsPDF, y: number, label: string, value: string) {
   doc.text(value, 70, y);
   return y + 7;
 }
+
+function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
+  if (y + needed > 275) {
+    doc.addPage();
+    return 20;
+  }
+  return y;
+}
+
+const complexidadeLabel: Record<string, string> = {
+  baixo: "Baixo",
+  medio: "Médio",
+  alto: "Alto",
+};
 
 export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
   const doc = new jsPDF();
@@ -127,12 +141,61 @@ export function generatePropostaPDF(proposta: any, itens: any[], cliente: any) {
     margin: { left: 15, right: 15 },
   });
 
+  let finalY = (doc as any).lastAutoTable?.finalY || y + 50;
+  finalY += 10;
+
+  // Service details from itens (prazo, complexidade, entregáveis)
+  const servicosComDetalhes = itens.filter((item) => item.servicos);
+  if (servicosComDetalhes.length > 0) {
+    finalY = checkPageBreak(doc, finalY, 40);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("Detalhes dos Serviços", 20, finalY);
+    finalY += 8;
+
+    for (const item of servicosComDetalhes) {
+      const s = item.servicos;
+      const neededHeight = 20 + (s.entregaveis ? s.entregaveis.split("\n").length * 5 : 0);
+      finalY = checkPageBreak(doc, finalY, neededHeight);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...BRAND.darkColor);
+      doc.text(`• ${s.nome}`, 22, finalY);
+      finalY += 6;
+
+      if (s.prazo_entrega) {
+        finalY = addSection(doc, finalY, "  Prazo:", `${s.prazo_entrega} dias`);
+      }
+      if (s.nivel_complexidade) {
+        finalY = addSection(doc, finalY, "  Complexidade:", complexidadeLabel[s.nivel_complexidade] || s.nivel_complexidade);
+      }
+      if (s.entregaveis) {
+        doc.setTextColor(...BRAND.grayColor);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("  Entregáveis:", 22, finalY);
+        finalY += 5;
+        const entregaveis = s.entregaveis.split("\n").filter((e: string) => e.trim());
+        doc.setTextColor(...BRAND.darkColor);
+        for (const ent of entregaveis) {
+          finalY = checkPageBreak(doc, finalY, 6);
+          doc.text(`    → ${ent.trim()}`, 24, finalY);
+          finalY += 5;
+        }
+      }
+      finalY += 4;
+    }
+  }
+
   if (proposta.observacoes) {
-    const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
+    finalY = checkPageBreak(doc, finalY, 15);
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(...BRAND.grayColor);
-    doc.text("Observações: " + proposta.observacoes, 20, finalY + 12, { maxWidth: 170 });
+    doc.text("Observações: " + proposta.observacoes, 20, finalY, { maxWidth: 170 });
   }
 
   addFooter(doc);
@@ -203,12 +266,78 @@ export function generateContratoPDF(contrato: any, itens: any[], cliente: any) {
     margin: { left: 15, right: 15 },
   });
 
+  let finalY = (doc as any).lastAutoTable?.finalY || y + 50;
+  finalY += 10;
+
+  // ESCOPO DO SERVIÇO section
+  const servicosComDetalhes = itens.filter((item) => item.servicos);
+  if (servicosComDetalhes.length > 0) {
+    finalY = checkPageBreak(doc, finalY, 30);
+
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(15, finalY - 5, 180, 10, 2, 2, "F");
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BRAND.primaryColor);
+    doc.text("ESCOPO DO SERVIÇO", 20, finalY + 2);
+    finalY += 12;
+
+    let hasReuniao = false;
+
+    for (const item of servicosComDetalhes) {
+      const s = item.servicos;
+      const entregaveisLines = s.entregaveis ? s.entregaveis.split("\n").filter((e: string) => e.trim()) : [];
+      const neededHeight = 20 + entregaveisLines.length * 5;
+      finalY = checkPageBreak(doc, finalY, neededHeight);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...BRAND.darkColor);
+      doc.text(`• ${s.nome}`, 22, finalY);
+      finalY += 6;
+
+      if (s.prazo_entrega) {
+        finalY = addSection(doc, finalY, "  Prazo de Entrega:", `${s.prazo_entrega} dias`);
+      }
+
+      if (entregaveisLines.length > 0) {
+        doc.setTextColor(...BRAND.grayColor);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("  Entregáveis:", 22, finalY);
+        finalY += 5;
+        doc.setTextColor(...BRAND.darkColor);
+        for (const ent of entregaveisLines) {
+          finalY = checkPageBreak(doc, finalY, 6);
+          doc.text(`    → ${ent.trim()}`, 24, finalY);
+          finalY += 5;
+        }
+      }
+
+      if (s.requer_reuniao) hasReuniao = true;
+      finalY += 4;
+    }
+
+    // Cláusula de reunião
+    if (hasReuniao) {
+      finalY = checkPageBreak(doc, finalY, 15);
+      finalY += 4;
+      doc.setFillColor(255, 248, 230);
+      doc.roundedRect(15, finalY - 4, 180, 12, 2, 2, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bolditalic");
+      doc.setTextColor(140, 100, 20);
+      doc.text("O projeto terá início após reunião inicial de alinhamento entre as partes.", 20, finalY + 3);
+      finalY += 14;
+    }
+  }
+
   if (contrato.observacoes) {
-    const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
+    finalY = checkPageBreak(doc, finalY, 15);
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(...BRAND.grayColor);
-    doc.text("Observações: " + contrato.observacoes, 20, finalY + 12, { maxWidth: 170 });
+    doc.text("Observações: " + contrato.observacoes, 20, finalY, { maxWidth: 170 });
   }
 
   addFooter(doc);

@@ -7,10 +7,17 @@ import { Plus, FilePlus, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const statusColors: Record<string, string> = {
-  ativo: "bg-green-500/20 text-green-400",
+  ativo: "bg-blue-500/20 text-blue-400",
   encerrado: "bg-muted text-muted-foreground",
   cancelado: "bg-destructive/20 text-destructive",
   suspenso: "bg-yellow-500/20 text-yellow-400",
+};
+
+const statusLabels: Record<string, string> = {
+  ativo: "Gerado",
+  encerrado: "Encerrado",
+  cancelado: "Desistiu",
+  suspenso: "Suspenso",
 };
 
 const CRMContratos = () => {

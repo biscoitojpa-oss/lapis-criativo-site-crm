@@ -104,7 +104,7 @@ const CRMPropostas = () => {
                   <td className="py-3 px-4 text-muted-foreground">{(p.clientes as any)?.nome || "—"}</td>
                   <td className="py-3 px-4">R$ {Number(p.valor_total).toFixed(2)}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs capitalize ${statusColors[p.status] || ""}`}>{p.status}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${statusColors[p.status] || ""}`}>{statusLabels[p.status] || p.status}</span>
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">{new Date(p.criado_em).toLocaleDateString("pt-BR")}</td>
                 </tr>

@@ -5,3 +5,18 @@ verify_jwt = false
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.criativo-x-chat]
+verify_jwt = false
+
+[functions.firecrawl-search]
+verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
+
+[functions.send-proposal-email]
+verify_jwt = false

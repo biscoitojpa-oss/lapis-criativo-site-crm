@@ -92,6 +92,7 @@ export function CRMSidebar() {
         </div>
         {renderGroup("Principal", mainItems)}
         {renderGroup("Cadastros", cadastroItems)}
+        {renderGroup("Agentes", agentItems)}
         {renderGroup("Ferramentas IA", toolItems)}
       </SidebarContent>
       <SidebarFooter>

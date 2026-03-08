@@ -213,6 +213,29 @@ const CRMFollowups = () => {
                   </div>
                 </div>
                 <div>
+                  <Label>Template</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    {TEMPLATES.map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`text-left text-xs p-2 rounded-lg border transition-colors hover:bg-muted/50 ${
+                          newMessage === t.mensagem.replace("{nome}", newName || "")
+                            ? "border-primary/50 bg-primary/5"
+                            : "border-border/50 bg-background/50"
+                        }`}
+                        onClick={() => {
+                          setNewMessage(t.mensagem.replace("{nome}", newName || ""));
+                          setNewMotivo(t.motivo);
+                        }}
+                      >
+                        <span className="font-medium">{t.label}</span>
+                        <p className="text-muted-foreground mt-0.5 line-clamp-2">{t.mensagem.replace("{nome}", newName || "cliente")}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
                   <Label>Mensagem *</Label>
                   <Textarea rows={3} value={newMessage} onChange={e => setNewMessage(e.target.value)} />
                 </div>

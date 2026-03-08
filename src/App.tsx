@@ -53,6 +53,7 @@ const App = () => (
               <Route path="contratos/:contratoId" element={<ContratoDetalhe />} />
               <Route path="servicos" element={<CRMServicos />} />
               <Route path="usuarios" element={<CRMUsuarios />} />
+              <Route path="base-conhecimento" element={<CRMBaseConhecimento />} />
               <Route path="ferramentas" element={<CRMTools />} />
               <Route path="ferramentas/:toolId" element={<CRMToolPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />

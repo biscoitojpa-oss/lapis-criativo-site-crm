@@ -120,12 +120,18 @@ const CRMWhatsApp = () => {
       setInstances(list);
       const states: Record<string, string> = {};
       for (const inst of list) {
-        const name = inst.instance?.instanceName || inst.instanceName;
+        const name = inst.name || inst.instance?.instanceName || inst.instanceName;
         if (name) {
-          try {
-            const state = await callEvolution("connectionState", name);
-            states[name] = state.instance?.state || state.state || "unknown";
-          } catch { states[name] = "error"; }
+          // Use connectionStatus from fetchInstances response directly
+          const status = inst.connectionStatus || inst.instance?.state;
+          if (status) {
+            states[name] = status;
+          } else {
+            try {
+              const state = await callEvolution("connectionState", name);
+              states[name] = state.instance?.state || state.state || "unknown";
+            } catch { states[name] = "error"; }
+          }
         }
       }
       setConnectionStates(states);

@@ -14,6 +14,45 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const FOLLOWUP_PROCESSOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-followup-processor`;
 
+const TEMPLATES = [
+  {
+    id: "reengajamento",
+    label: "🔄 Reengajamento",
+    motivo: "reengajamento",
+    mensagem: "Oi, {nome}! 😊 Tudo bem? Há alguns dias conversamos e fiquei pensando se posso te ajudar com algo. Se quiser saber mais sobre nossos serviços, é só me chamar! 🚀",
+  },
+  {
+    id: "pos-proposta",
+    label: "📋 Pós-proposta",
+    motivo: "followup",
+    mensagem: "Oi, {nome}! 😊 Estou passando para saber se você teve a oportunidade de analisar a proposta que enviamos. Ficou com alguma dúvida? Estou à disposição para esclarecer qualquer ponto! 💬",
+  },
+  {
+    id: "promocao",
+    label: "🎯 Promoção",
+    motivo: "remarketing",
+    mensagem: "Oi, {nome}! 🎉 Temos uma condição especial esse mês para novos projetos de marketing digital. Quer saber mais? Posso te contar os detalhes rapidinho! ✨",
+  },
+  {
+    id: "lembrete-reuniao",
+    label: "📅 Lembrete de reunião",
+    motivo: "followup",
+    mensagem: "Oi, {nome}! Passando para lembrar da nossa conversa. Que tal agendarmos uma reunião rápida para entender melhor o que você precisa? Pode ser por vídeo, sem compromisso! 📲",
+  },
+  {
+    id: "caso-sucesso",
+    label: "🏆 Case de sucesso",
+    motivo: "remarketing",
+    mensagem: "Oi, {nome}! 😊 Queria compartilhar um resultado incrível que tivemos recentemente com um cliente do mesmo segmento que o seu. Quer saber como podemos fazer algo parecido pra você? 🚀",
+  },
+  {
+    id: "retorno-inativo",
+    label: "💤 Retorno inativo",
+    motivo: "reengajamento",
+    mensagem: "Oi, {nome}! Faz um tempinho que não conversamos. 😊 Queria saber como estão as coisas por aí. Se precisar de algo relacionado a marketing digital, estou aqui pra te ajudar! 💡",
+  },
+];
+
 interface Followup {
   id: string;
   telefone: string;

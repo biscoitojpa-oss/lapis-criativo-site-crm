@@ -6,8 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_AUTO_FOLLOWUPS = 3;
-const INACTIVITY_DAYS = 2;
+// These are defaults; overridden by whatsapp_config if available
+let MAX_AUTO_FOLLOWUPS = 3;
+let INACTIVITY_DAYS = 2;
+let FOLLOWUP_HOUR_START = 10;
+let FOLLOWUP_HOUR_END = 19;
+let FOLLOWUP_ATIVO = true;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

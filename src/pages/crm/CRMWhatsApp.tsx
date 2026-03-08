@@ -97,6 +97,12 @@ const CRMWhatsApp = () => {
   const [bulkMessage, setBulkMessage] = useState("");
   const [bulkInstance, setBulkInstance] = useState("default");
 
+  // Conversations
+  const [contacts, setContacts] = useState<{ phone: string; name: string; lastMsg: string; lastDate: string; unread: number }[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<{ phone: string; name: string } | null>(null);
+  const [contactSearch, setContactSearch] = useState("");
+
   const callEvolution = async (action: string, instanceName?: string, data?: any) => {
     const resp = await fetch(EVOLUTION_URL, {
       method: "POST",

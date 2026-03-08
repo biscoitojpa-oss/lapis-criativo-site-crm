@@ -85,6 +85,33 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
     fetchInstances();
   }, []);
 
+  const checkHandoff = useCallback(async () => {
+    const { data } = await supabase
+      .from("whatsapp_handoff")
+      .select("ativo")
+      .eq("telefone", normalizedPhone)
+      .eq("ativo", true)
+      .maybeSingle();
+    setHandoffActive(!!data);
+  }, [normalizedPhone]);
+
+  const toggleHandoff = async () => {
+    if (handoffActive) {
+      // Deactivate - resume bot
+      await supabase.from("whatsapp_handoff").update({ ativo: false, desativado_em: new Date().toISOString() }).eq("telefone", normalizedPhone);
+      setHandoffActive(false);
+      toast.success("Bot reativado para este contato");
+    } else {
+      // Activate - pause bot
+      await supabase.from("whatsapp_handoff").upsert(
+        { telefone: normalizedPhone, ativo: true, ativado_em: new Date().toISOString() },
+        { onConflict: "telefone" }
+      );
+      setHandoffActive(true);
+      toast.success("Bot pausado — atendimento humano ativado");
+    }
+  };
+
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
@@ -95,7 +122,8 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
       .limit(200);
     setMessages((data || []) as unknown as Message[]);
     setLoading(false);
-  }, [normalizedPhone]);
+    checkHandoff();
+  }, [normalizedPhone, checkHandoff]);
 
   useEffect(() => {
     if (!normalizedPhone) return;

@@ -120,12 +120,18 @@ const CRMWhatsApp = () => {
       setInstances(list);
       const states: Record<string, string> = {};
       for (const inst of list) {
-        const name = inst.instance?.instanceName || inst.instanceName;
+        const name = inst.name || inst.instance?.instanceName || inst.instanceName;
         if (name) {
-          try {
-            const state = await callEvolution("connectionState", name);
-            states[name] = state.instance?.state || state.state || "unknown";
-          } catch { states[name] = "error"; }
+          // Use connectionStatus from fetchInstances response directly
+          const status = inst.connectionStatus || inst.instance?.state;
+          if (status) {
+            states[name] = status;
+          } else {
+            try {
+              const state = await callEvolution("connectionState", name);
+              states[name] = state.instance?.state || state.state || "unknown";
+            } catch { states[name] = "error"; }
+          }
         }
       }
       setConnectionStates(states);
@@ -600,7 +606,7 @@ const CRMWhatsApp = () => {
           ) : (
             <div className="space-y-3">
               {instances.map((inst, i) => {
-                const name = inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
+                const name = inst.name || inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
                 const state = connectionStates[name] || "unknown";
                 return (
                   <Card key={name} className="bg-card/50 border-border/50">
@@ -612,8 +618,16 @@ const CRMWhatsApp = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-sm">{name}</span>
                               <Badge variant="outline" className={getStateColor(state)}>{getStateLabel(state)}</Badge>
-                              {inst.instance?.integration && <Badge variant="secondary" className="text-xs">{inst.instance.integration}</Badge>}
+                              {(inst.integration || inst.instance?.integration) && <Badge variant="secondary" className="text-xs">{inst.integration || inst.instance.integration}</Badge>}
                             </div>
+                            {(inst.profileName || inst.number) && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {inst.profileName && <span>{inst.profileName}</span>}
+                                {inst.profileName && inst.number && <span> · </span>}
+                                {inst.number && <span>{inst.number}</span>}
+                                {inst._count?.Message != null && <span> · {inst._count.Message.toLocaleString("pt-BR")} msgs</span>}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -832,7 +846,7 @@ const CRMWhatsApp = () => {
                             <SelectTrigger className="bg-background/50 border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {instances.length > 0 ? instances.map((inst, i) => {
-                                const name = inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
+                                const name = inst.name || inst.instance?.instanceName || inst.instanceName || `instance-${i}`;
                                 return <SelectItem key={name} value={name}>{name}</SelectItem>;
                               }) : <SelectItem value="default">default</SelectItem>}
                             </SelectContent>

@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MessageCircle } from "lucide-react";
+import { Search, MessageCircle, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import WhatsAppChat from "@/components/WhatsAppChat";
 
 const CRMLeads = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [chatLead, setChatLead] = useState<any>(null);
 
   useEffect(() => {
     supabase.from("leads").select("*").order("criado_em", { ascending: false }).then(({ data }) => {
@@ -21,6 +24,11 @@ const CRMLeads = () => {
     l.email.toLowerCase().includes(search.toLowerCase()) ||
     l.ferramenta.toLowerCase().includes(search.toLowerCase())
   );
+
+  const canChat = (lead: any) => {
+    const phone = lead.whatsapp?.replace(/\D/g, "");
+    return phone && phone !== "interno" && !phone.includes("@");
+  };
 
   return (
     <div className="space-y-6">
@@ -62,25 +70,19 @@ const CRMLeads = () => {
                   <tr key={lead.id} className="border-b border-border/20 hover:bg-muted/10">
                     <td className="py-3 px-4 font-medium">{lead.nome}</td>
                     <td className="py-3 px-4 text-muted-foreground">{lead.email}</td>
-                    <td className="py-3 px-4">
-                      <a href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-green-500 hover:underline">
-                        {lead.whatsapp}
-                      </a>
-                    </td>
+                    <td className="py-3 px-4 text-emerald-400">{lead.whatsapp}</td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{lead.ferramenta}</span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">{new Date(lead.criado_em).toLocaleDateString("pt-BR")}</td>
                     <td className="py-3 px-4 text-right">
-                      <a
-                        href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${lead.nome}! Aqui é da Lápis Criativo. Tudo bem?`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button variant="ghost" size="sm" className="text-green-500 hover:text-green-400">
+                      {canChat(lead) ? (
+                        <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300" onClick={() => setChatLead(lead)}>
                           <MessageCircle className="w-4 h-4" /> Conversar
                         </Button>
-                      </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -89,6 +91,21 @@ const CRMLeads = () => {
           </div>
         )}
       </div>
+
+      {/* WhatsApp Chat Dialog */}
+      <Dialog open={!!chatLead} onOpenChange={(open) => { if (!open) setChatLead(null); }}>
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden" style={{ height: "600px" }}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Chat WhatsApp - {chatLead?.nome}</DialogTitle>
+          </DialogHeader>
+          {chatLead && (
+            <WhatsAppChat
+              phone={chatLead.whatsapp}
+              contactName={chatLead.nome}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

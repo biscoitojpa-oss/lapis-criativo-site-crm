@@ -1,4 +1,5 @@
-import { Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, Globe, MessageCircle, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
 import logoImg from "@/assets/logo-lapis-criativo.png";
 
 const Footer = () => {

@@ -1,4 +1,5 @@
-import { Instagram, Facebook, Globe, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, Globe, MessageCircle, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
 import logoImg from "@/assets/logo-lapis-criativo.png";
 
 const Footer = () => {
@@ -24,9 +25,18 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Logo & Description */}
           <div className="md:col-span-2 space-y-6">
-            <a href="#" className="flex items-center gap-2 group">
-              <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
-            </a>
+            <div className="flex items-center gap-4">
+              <a href="#" className="flex items-center gap-2 group">
+                <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
+              </a>
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all text-sm font-medium"
+              >
+                <Lock className="w-4 h-4" />
+                Acesso CRM
+              </Link>
+            </div>
             <p className="text-muted-foreground max-w-md">
               Agência de marketing digital especializada em transformar negócios
               através de estratégias criativas e resultados mensuráveis.

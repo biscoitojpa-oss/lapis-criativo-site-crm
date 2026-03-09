@@ -3,8 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { toast } from "sonner";
+import logoImg from "@/assets/logo-lapis-criativo-branco.png";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -30,14 +31,9 @@ const LoginPage = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/5 to-background" />
       <div className="relative z-10 w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-              <Pencil className="w-6 h-6 text-primary-foreground" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
           </div>
-          <h1 className="font-display text-2xl font-bold">
-            Lápis <span className="neon-text">Criativo</span>
-          </h1>
           <p className="text-muted-foreground mt-2">Acesse o painel da agência</p>
         </div>
 

@@ -3,8 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { toast } from "sonner";
+import logoImg from "@/assets/logo-lapis-criativo-branco.png";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");

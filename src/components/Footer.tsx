@@ -25,24 +25,15 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Logo & Description */}
           <div className="md:col-span-2 space-y-6">
-            <div className="flex items-center gap-4">
-              <a href="#" className="flex items-center gap-2 group">
-                <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
-              </a>
-              <Link
-                to="/login"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all text-sm font-medium"
-              >
-                <Lock className="w-4 h-4" />
-                Acesso CRM
-              </Link>
-            </div>
+          <a href="#" className="flex items-center gap-2 group">
+              <img src={logoImg} alt="Lápis Criativo" className="w-32 h-32 object-contain" />
+            </a>
             <p className="text-muted-foreground max-w-md">
               Agência de marketing digital especializada em transformar negócios
               através de estratégias criativas e resultados mensuráveis.
             </p>
             {/* Social Links */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
@@ -55,6 +46,14 @@ const Footer = () => {
                   <social.icon className="w-5 h-5 text-primary" />
                 </a>
               ))}
+              <Link
+                to="/login"
+                className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 hover:scale-110 transition-all"
+                aria-label="Acesso CRM"
+                title="Acesso CRM"
+              >
+                <Lock className="w-4 h-4 text-primary" />
+              </Link>
             </div>
           </div>
 

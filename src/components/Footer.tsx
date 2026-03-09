@@ -33,7 +33,7 @@ const Footer = () => {
               através de estratégias criativas e resultados mensuráveis.
             </p>
             {/* Social Links */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}

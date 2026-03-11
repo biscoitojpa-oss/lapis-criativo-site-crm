@@ -158,6 +158,16 @@ const PropostaDetalhe = () => {
           itens={itens}
         />
       )}
+
+      {proposta && (
+        <EnviarPropostaWhatsAppDialog
+          open={whatsappOpen}
+          onOpenChange={setWhatsappOpen}
+          proposta={proposta}
+          cliente={cliente}
+          itens={itens}
+        />
+      )}
     </div>
   );
 };

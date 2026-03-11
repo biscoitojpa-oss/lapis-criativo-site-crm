@@ -99,6 +99,9 @@ const PropostaDetalhe = () => {
             <Button variant="outline" size="sm" onClick={() => setEmailOpen(true)}>
               <Send className="w-4 h-4" /> Enviar por Email
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setWhatsappOpen(true)} className="text-green-500 border-green-500/30 hover:bg-green-500/10">
+              <MessageSquare className="w-4 h-4" /> Enviar por WhatsApp
+            </Button>
             {proposta.status === "rascunho" && <Button variant="outline" size="sm" onClick={() => updateStatus("enviada")}>Marcar como Enviada</Button>}
             {proposta.status === "enviada" && (
               <>

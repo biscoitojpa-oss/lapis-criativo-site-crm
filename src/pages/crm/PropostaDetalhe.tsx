@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FilePlus, Download, Send } from "lucide-react";
+import { ArrowLeft, FileText, FilePlus, Download, Send, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { generatePropostaPDF } from "@/lib/pdf-generator";
 import EnviarPropostaDialog from "@/components/EnviarPropostaDialog";
+import EnviarPropostaWhatsAppDialog from "@/components/EnviarPropostaWhatsAppDialog";
 
 const statusColors: Record<string, string> = {
   rascunho: "bg-muted text-muted-foreground",

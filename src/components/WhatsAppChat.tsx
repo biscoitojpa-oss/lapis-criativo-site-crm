@@ -50,7 +50,12 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 
-  const HIDDEN_INSTANCES = ["daher", "leads"];
+  const allowedInstances: string[] = (() => {
+    try {
+      const saved = localStorage.getItem("crm_allowed_instances");
+      return saved ? JSON.parse(saved) : ["lapismaster"];
+    } catch { return ["lapismaster"]; }
+  })();
 
   // Fetch available instances
   useEffect(() => {

@@ -137,10 +137,10 @@ const CRMWhatsApp = () => {
     try {
       const result = await callEvolution("fetchInstances");
       const raw = Array.isArray(result) ? result : [];
-      // Filtra instâncias ocultas
+      // Filtra apenas instâncias permitidas
       const list = raw.filter((inst: any) => {
         const n = inst.name || inst.instance?.instanceName || inst.instanceName || "";
-        return !HIDDEN_INSTANCES.some(h => n.toLowerCase() === h.toLowerCase());
+        return allowedInstances.some(a => n.toLowerCase() === a.toLowerCase());
       });
       setInstances(list);
       const states: Record<string, string> = {};

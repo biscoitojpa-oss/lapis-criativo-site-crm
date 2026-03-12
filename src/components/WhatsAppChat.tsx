@@ -50,7 +50,12 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const bottomRef = useRef<HTMLDivElement>(null);
   const normalizedPhone = normalizePhone(phone);
 
-  const HIDDEN_INSTANCES = ["daher", "leads"];
+  const allowedInstances: string[] = (() => {
+    try {
+      const saved = localStorage.getItem("crm_allowed_instances");
+      return saved ? JSON.parse(saved) : ["lapismaster"];
+    } catch { return ["lapismaster"]; }
+  })();
 
   // Fetch available instances
   useEffect(() => {
@@ -71,7 +76,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
               name: i.name || i.instanceName || i.instance?.instanceName || "",
               connectionStatus: i.connectionStatus || i.state || "unknown",
             }))
-            .filter((i: EvolutionInstance) => !HIDDEN_INSTANCES.some(h => i.name.toLowerCase() === h.toLowerCase()));
+            .filter((i: EvolutionInstance) => allowedInstances.some(a => i.name.toLowerCase() === a.toLowerCase()));
           setInstances(list);
           if (!selectedInstance && list.length > 0) {
             const connected = list.find((i) => i.connectionStatus === "open");

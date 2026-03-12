@@ -19,7 +19,7 @@ interface Item {
   criado_em: string;
 }
 
-const categorias = ["geral", "servicos", "precos", "empresa", "processos", "faq"];
+const categorias = ["geral", "servicos", "precos", "empresa", "processos", "faq", "objecoes"];
 
 const CRMBaseConhecimento = () => {
   const [items, setItems] = useState<Item[]>([]);

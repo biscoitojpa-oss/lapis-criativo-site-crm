@@ -125,8 +125,12 @@ const CRMWhatsApp = () => {
     return resp.json();
   };
 
-  // Instâncias que não devem aparecer no CRM
-  const HIDDEN_INSTANCES = ["Daher", "daher", "leads"];
+  // Instâncias permitidas no CRM (apenas essas aparecerão)
+  const [allowedInstances, setAllowedInstances] = useState<string[]>(() => {
+    const saved = localStorage.getItem("crm_allowed_instances");
+    return saved ? JSON.parse(saved) : ["lapismaster"];
+  });
+  const [newAllowedInstance, setNewAllowedInstance] = useState("");
 
   const fetchInstances = useCallback(async () => {
     setLoadingInstances(true);

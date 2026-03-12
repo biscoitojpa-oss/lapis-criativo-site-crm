@@ -704,7 +704,65 @@ const CRMWhatsApp = () => {
             </div>
           </div>
 
-          {/* QR Code Dialog */}
+          {/* Gerenciar instâncias permitidas */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><Settings className="w-4 h-4" />Instâncias Permitidas</CardTitle>
+              <CardDescription className="text-xs">Apenas as instâncias listadas abaixo serão exibidas no CRM</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {allowedInstances.map((name) => (
+                  <Badge key={name} variant="secondary" className="flex items-center gap-1.5 px-3 py-1">
+                    {name}
+                    <button onClick={() => {
+                      const updated = allowedInstances.filter(n => n !== name);
+                      setAllowedInstances(updated);
+                      localStorage.setItem("crm_allowed_instances", JSON.stringify(updated));
+                      toast.info(`Instância "${name}" removida`);
+                    }} className="ml-1 hover:text-destructive"><XCircle className="w-3.5 h-3.5" /></button>
+                  </Badge>
+                ))}
+                {allowedInstances.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma instância permitida. Adicione uma abaixo.</p>}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nome da instância (ex: lapismaster)"
+                  value={newAllowedInstance}
+                  onChange={e => setNewAllowedInstance(e.target.value)}
+                  className="text-sm"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && newAllowedInstance.trim()) {
+                      const name = newAllowedInstance.trim();
+                      if (!allowedInstances.some(a => a.toLowerCase() === name.toLowerCase())) {
+                        const updated = [...allowedInstances, name];
+                        setAllowedInstances(updated);
+                        localStorage.setItem("crm_allowed_instances", JSON.stringify(updated));
+                        setNewAllowedInstance("");
+                        toast.success(`Instância "${name}" adicionada`);
+                      }
+                    }
+                  }}
+                />
+                <Button variant="outline" size="sm" onClick={() => {
+                  const name = newAllowedInstance.trim();
+                  if (!name) return;
+                  if (allowedInstances.some(a => a.toLowerCase() === name.toLowerCase())) {
+                    toast.error("Instância já está na lista");
+                    return;
+                  }
+                  const updated = [...allowedInstances, name];
+                  setAllowedInstances(updated);
+                  localStorage.setItem("crm_allowed_instances", JSON.stringify(updated));
+                  setNewAllowedInstance("");
+                  toast.success(`Instância "${name}" adicionada`);
+                }}>
+                  <Plus className="w-4 h-4 mr-1" />Adicionar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Dialog open={!!showQrFor} onOpenChange={() => setShowQrFor(null)}>
             <DialogContent className="max-w-sm">
               <DialogHeader>

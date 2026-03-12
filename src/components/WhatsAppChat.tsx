@@ -76,7 +76,7 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
               name: i.name || i.instanceName || i.instance?.instanceName || "",
               connectionStatus: i.connectionStatus || i.state || "unknown",
             }))
-            .filter((i: EvolutionInstance) => !HIDDEN_INSTANCES.some(h => i.name.toLowerCase() === h.toLowerCase()));
+            .filter((i: EvolutionInstance) => allowedInstances.some(a => i.name.toLowerCase() === a.toLowerCase()));
           setInstances(list);
           if (!selectedInstance && list.length > 0) {
             const connected = list.find((i) => i.connectionStatus === "open");

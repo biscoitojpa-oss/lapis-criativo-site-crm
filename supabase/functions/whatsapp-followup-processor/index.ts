@@ -254,9 +254,41 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
 
     let processed = 0;
     let errors = 0;
+    const sentPhones = new Set<string>(); // Prevent sending to same phone twice in one batch
 
     for (const fu of (followups || [])) {
       try {
+        // Skip if we already sent to this phone in this batch
+        if (sentPhones.has(fu.telefone)) {
+          await supabase.from("whatsapp_followups").update({
+            status: "cancelado",
+            atualizado_em: nowISO,
+            erro: "Duplicata no mesmo lote",
+          }).eq("id", fu.id);
+          console.log(`Follow-up duplicado cancelado para ${fu.telefone}`);
+          continue;
+        }
+
+        // Check if a follow-up was already sent to this phone in the last 12 hours
+        const { data: recentSent } = await supabase
+          .from("whatsapp_followups")
+          .select("id")
+          .eq("telefone", fu.telefone)
+          .eq("status", "enviado")
+          .gte("enviado_em", new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString())
+          .limit(1)
+          .maybeSingle();
+
+        if (recentSent) {
+          await supabase.from("whatsapp_followups").update({
+            status: "cancelado",
+            atualizado_em: nowISO,
+            erro: "Follow-up já enviado nas últimas 12h",
+          }).eq("id", fu.id);
+          console.log(`Follow-up cancelado para ${fu.telefone} — já enviado recentemente`);
+          continue;
+        }
+
         // Check if client responded since follow-up was created
         if (fu.origem === "auto") {
           const { data: recentMsg } = await supabase
@@ -322,6 +354,7 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
           atualizado_em: nowISO,
         }).eq("id", fu.id);
 
+        sentPhones.add(fu.telefone);
         processed++;
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {

@@ -354,6 +354,7 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
           atualizado_em: nowISO,
         }).eq("id", fu.id);
 
+        sentPhones.add(fu.telefone);
         processed++;
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {

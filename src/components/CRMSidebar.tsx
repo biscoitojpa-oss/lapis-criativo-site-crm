@@ -15,6 +15,7 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/crm", icon: LayoutDashboard },
+  { title: "Pipeline", url: "/crm/pipeline", icon: Kanban },
   { title: "Clientes", url: "/crm/clientes", icon: Briefcase },
   { title: "Propostas", url: "/crm/propostas", icon: FileText },
   { title: "Contratos", url: "/crm/contratos", icon: FilePlus },

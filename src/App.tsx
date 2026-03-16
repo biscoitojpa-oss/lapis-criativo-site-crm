@@ -48,6 +48,7 @@ const App = () => (
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/crm" element={<ProtectedRoute><CRMLayout /></ProtectedRoute>}>
               <Route index element={<CRMDashboard />} />
+              <Route path="pipeline" element={<CRMPipeline />} />
               <Route path="leads" element={<CRMLeads />} />
               <Route path="clientes" element={<CRMClientes />} />
               <Route path="clientes/:clienteId" element={<ClienteDetalhe />} />

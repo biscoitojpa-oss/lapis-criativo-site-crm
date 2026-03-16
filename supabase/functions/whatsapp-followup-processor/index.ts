@@ -258,6 +258,27 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
 
     for (const fu of (followups || [])) {
       try {
+        // Concurrency guard: claim this row before doing any work
+        // Prevents duplicate sends when the processor runs concurrently
+        const { data: claimed, error: claimError } = await supabase
+          .from("whatsapp_followups")
+          .update({
+            status: "processando",
+            atualizado_em: nowISO,
+            erro: null,
+          })
+          .eq("id", fu.id)
+          .eq("status", "agendado")
+          .select("id")
+          .maybeSingle();
+
+        if (claimError) throw claimError;
+
+        if (!claimed) {
+          console.log(`Follow-up ${fu.id} já foi capturado por outra execução`);
+          continue;
+        }
+
         // Skip if we already sent to this phone in this batch
         if (sentPhones.has(fu.telefone)) {
           await supabase.from("whatsapp_followups").update({

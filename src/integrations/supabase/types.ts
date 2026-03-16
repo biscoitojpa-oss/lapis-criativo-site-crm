@@ -326,6 +326,73 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_cards: {
+        Row: {
+          atualizado_em: string
+          cliente_id: string | null
+          criado_em: string
+          criado_por: string
+          etapa: Database["public"]["Enums"]["etapa_funil"]
+          id: string
+          lead_id: string | null
+          observacoes: string | null
+          posicao: number
+          proposta_id: string | null
+          titulo: string
+          valor: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          cliente_id?: string | null
+          criado_em?: string
+          criado_por: string
+          etapa?: Database["public"]["Enums"]["etapa_funil"]
+          id?: string
+          lead_id?: string | null
+          observacoes?: string | null
+          posicao?: number
+          proposta_id?: string | null
+          titulo: string
+          valor?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          cliente_id?: string | null
+          criado_em?: string
+          criado_por?: string
+          etapa?: Database["public"]["Enums"]["etapa_funil"]
+          id?: string
+          lead_id?: string | null
+          observacoes?: string | null
+          posicao?: number
+          proposta_id?: string | null
+          titulo?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_cards_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_cards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_cards_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           atualizado_em: string
@@ -776,6 +843,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "member"
       contrato_status: "ativo" | "encerrado" | "cancelado" | "suspenso"
+      etapa_funil:
+        | "prospeccao"
+        | "contato"
+        | "negociacao"
+        | "proposta"
+        | "fechamento"
       fila_status: "pendente" | "processando" | "enviado" | "erro" | "expirado"
       proposta_status:
         | "rascunho"
@@ -913,6 +986,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "member"],
       contrato_status: ["ativo", "encerrado", "cancelado", "suspenso"],
+      etapa_funil: [
+        "prospeccao",
+        "contato",
+        "negociacao",
+        "proposta",
+        "fechamento",
+      ],
       fila_status: ["pendente", "processando", "enviado", "erro", "expirado"],
       proposta_status: [
         "rascunho",

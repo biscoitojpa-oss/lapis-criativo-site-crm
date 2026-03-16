@@ -28,6 +28,7 @@ import CRMBuscadorLeads from "./pages/crm/CRMBuscadorLeads";
 import CRMWhatsApp from "./pages/crm/CRMWhatsApp";
 import CRMPagamentos from "./pages/crm/CRMPagamentos";
 import CRMFollowups from "./pages/crm/CRMFollowups";
+import CRMPipeline from "./pages/crm/CRMPipeline";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/assinar/:token" element={<AssinarContrato />} />
             <Route path="/crm" element={<ProtectedRoute><CRMLayout /></ProtectedRoute>}>
               <Route index element={<CRMDashboard />} />
+              <Route path="pipeline" element={<CRMPipeline />} />
               <Route path="leads" element={<CRMLeads />} />
               <Route path="clientes" element={<CRMClientes />} />
               <Route path="clientes/:clienteId" element={<ClienteDetalhe />} />

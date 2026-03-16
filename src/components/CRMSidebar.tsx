@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Brain, BarChart3, LogOut, Pencil,
   MapPin, Search, Target, Globe, LineChart, Calendar, Instagram,
-  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen, Bot, Crosshair, MessageCircle, CreditCard, CalendarClock,
+  Briefcase, FileText, FilePlus, UserPlus, Package, BookOpen, Bot, Crosshair, MessageCircle, CreditCard, CalendarClock, Kanban,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/crm", icon: LayoutDashboard },
+  { title: "Pipeline", url: "/crm/pipeline", icon: Kanban },
   { title: "Clientes", url: "/crm/clientes", icon: Briefcase },
   { title: "Propostas", url: "/crm/propostas", icon: FileText },
   { title: "Contratos", url: "/crm/contratos", icon: FilePlus },

@@ -154,6 +154,9 @@ const ClienteDetalhe = () => {
             <Link to={`/crm/contratos/novo?cliente=${clienteId}`}>
               <Button variant="outline" size="sm"><FilePlus className="w-4 h-4" /> Novo Contrato</Button>
             </Link>
+            <Button variant="outline" size="sm" onClick={() => setTarefaDialogOpen(true)}>
+              <CalendarPlus className="w-4 h-4" /> Nova Tarefa
+            </Button>
             {clientePhone && (
               <Button variant="outline" size="sm" className="text-emerald-400" onClick={() => setShowChat(!showChat)}>
                 <MessageCircle className="w-4 h-4" /> {showChat ? "Fechar Chat" : "WhatsApp"}

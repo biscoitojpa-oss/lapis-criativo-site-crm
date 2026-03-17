@@ -380,7 +380,7 @@ const CRMAgenda = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Prioridade</label>
-                <Select value={form.prioridade} onValueChange={v => setForm({ ...form, prioridade: v })}>
+                <Select value={form.prioridade} onValueChange={v => setForm({ ...form, prioridade: v as FormState["prioridade"] })}>
                   <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="baixa">Baixa</SelectItem>

@@ -29,6 +29,7 @@ import CRMWhatsApp from "./pages/crm/CRMWhatsApp";
 import CRMPagamentos from "./pages/crm/CRMPagamentos";
 import CRMFollowups from "./pages/crm/CRMFollowups";
 import CRMPipeline from "./pages/crm/CRMPipeline";
+import CRMAgenda from "./pages/crm/CRMAgenda";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssinarContrato from "./pages/AssinarContrato";
 import NotFound from "./pages/NotFound";

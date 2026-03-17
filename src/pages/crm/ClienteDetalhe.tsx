@@ -111,6 +111,7 @@ const ClienteDetalhe = () => {
     const novoStatus = t.status === "concluida" ? "pendente" : "concluida";
     await supabase.from("tarefas").update({ status: novoStatus }).eq("id", t.id);
     loadData();
+  };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
   if (!cliente) return <div className="p-8 text-center">Cliente não encontrado</div>;

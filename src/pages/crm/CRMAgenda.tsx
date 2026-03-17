@@ -368,7 +368,7 @@ const CRMAgenda = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Tipo</label>
-                <Select value={form.tipo} onValueChange={v => setForm({ ...form, tipo: v })}>
+                <Select value={form.tipo} onValueChange={v => setForm({ ...form, tipo: v as FormState["tipo"] })}>
                   <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tarefa">Tarefa</SelectItem>

@@ -31,14 +31,18 @@ const contratoStatusLabels: Record<string, { label: string; color: string }> = {
 
 const ClienteDetalhe = () => {
   const { clienteId } = useParams<{ clienteId: string }>();
+  const { user } = useAuth();
   const [cliente, setCliente] = useState<any>(null);
   const [propostas, setPropostas] = useState<any[]>([]);
   const [contratos, setContratos] = useState<any[]>([]);
+  const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [tarefaDialogOpen, setTarefaDialogOpen] = useState(false);
+  const [novaTarefa, setNovaTarefa] = useState({ titulo: "", tipo: "tarefa" as string, prioridade: "media" as string });
 
   const loadData = () => {
     if (!clienteId) return;

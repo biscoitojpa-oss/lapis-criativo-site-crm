@@ -50,6 +50,7 @@ const App = () => (
             <Route path="/crm" element={<ProtectedRoute><CRMLayout /></ProtectedRoute>}>
               <Route index element={<CRMDashboard />} />
               <Route path="pipeline" element={<CRMPipeline />} />
+              <Route path="agenda" element={<CRMAgenda />} />
               <Route path="leads" element={<CRMLeads />} />
               <Route path="clientes" element={<CRMClientes />} />
               <Route path="clientes/:clienteId" element={<ClienteDetalhe />} />

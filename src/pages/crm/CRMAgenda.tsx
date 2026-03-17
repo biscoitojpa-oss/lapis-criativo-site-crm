@@ -56,9 +56,9 @@ const statusColors: Record<string, string> = {
 const emptyForm = {
   titulo: "",
   descricao: "",
-  tipo: "tarefa" as string,
-  prioridade: "media" as string,
-  status: "pendente" as string,
+  tipo: "tarefa" as const,
+  prioridade: "media" as const,
+  status: "pendente" as const,
   data_vencimento: null as Date | null,
   cliente_id: "",
   proposta_id: "",

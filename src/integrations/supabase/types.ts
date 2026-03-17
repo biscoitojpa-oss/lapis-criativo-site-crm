@@ -578,6 +578,82 @@ export type Database = {
         }
         Relationships: []
       }
+      tarefas: {
+        Row: {
+          atualizado_em: string
+          cliente_id: string | null
+          contrato_id: string | null
+          criado_em: string
+          criado_por: string
+          data_conclusao: string | null
+          data_vencimento: string | null
+          descricao: string | null
+          id: string
+          prioridade: Database["public"]["Enums"]["tarefa_prioridade"]
+          proposta_id: string | null
+          responsavel_id: string
+          status: Database["public"]["Enums"]["tarefa_status"]
+          tipo: Database["public"]["Enums"]["tarefa_tipo"]
+          titulo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          cliente_id?: string | null
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por: string
+          data_conclusao?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: Database["public"]["Enums"]["tarefa_prioridade"]
+          proposta_id?: string | null
+          responsavel_id: string
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: Database["public"]["Enums"]["tarefa_tipo"]
+          titulo: string
+        }
+        Update: {
+          atualizado_em?: string
+          cliente_id?: string | null
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por?: string
+          data_conclusao?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: Database["public"]["Enums"]["tarefa_prioridade"]
+          proposta_id?: string | null
+          responsavel_id?: string
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: Database["public"]["Enums"]["tarefa_tipo"]
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -856,6 +932,9 @@ export type Database = {
         | "aprovada"
         | "recusada"
         | "cancelada"
+      tarefa_prioridade: "baixa" | "media" | "alta" | "urgente"
+      tarefa_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
+      tarefa_tipo: "tarefa" | "reuniao" | "lembrete" | "prazo"
       tipo_pagamento: "mensal" | "unico"
     }
     CompositeTypes: {
@@ -1001,6 +1080,9 @@ export const Constants = {
         "recusada",
         "cancelada",
       ],
+      tarefa_prioridade: ["baixa", "media", "alta", "urgente"],
+      tarefa_status: ["pendente", "em_andamento", "concluida", "cancelada"],
+      tarefa_tipo: ["tarefa", "reuniao", "lembrete", "prazo"],
       tipo_pagamento: ["mensal", "unico"],
     },
   },

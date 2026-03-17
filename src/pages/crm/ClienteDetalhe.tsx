@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle, Pencil } from "lucide-react";
+import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle, Pencil, CalendarPlus, CheckCircle2, Circle, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import WhatsAppChat from "@/components/WhatsAppChat";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const propostaStatusLabels: Record<string, { label: string; color: string }> = {
   rascunho: { label: "Gerada", color: "bg-muted text-muted-foreground" },

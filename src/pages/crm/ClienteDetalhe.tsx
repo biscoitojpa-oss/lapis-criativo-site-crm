@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle, Pencil } from "lucide-react";
+import { ArrowLeft, FileText, FilePlus, Phone, Mail, MapPin, Building, MessageCircle, Pencil, CalendarPlus, CheckCircle2, Circle, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import WhatsAppChat from "@/components/WhatsAppChat";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const propostaStatusLabels: Record<string, { label: string; color: string }> = {
   rascunho: { label: "Gerada", color: "bg-muted text-muted-foreground" },
@@ -26,14 +31,18 @@ const contratoStatusLabels: Record<string, { label: string; color: string }> = {
 
 const ClienteDetalhe = () => {
   const { clienteId } = useParams<{ clienteId: string }>();
+  const { user } = useAuth();
   const [cliente, setCliente] = useState<any>(null);
   const [propostas, setPropostas] = useState<any[]>([]);
   const [contratos, setContratos] = useState<any[]>([]);
+  const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [tarefaDialogOpen, setTarefaDialogOpen] = useState(false);
+  const [novaTarefa, setNovaTarefa] = useState({ titulo: "", tipo: "tarefa" as string, prioridade: "media" as string });
 
   const loadData = () => {
     if (!clienteId) return;
@@ -41,10 +50,12 @@ const ClienteDetalhe = () => {
       supabase.from("clientes").select("*").eq("id", clienteId).single(),
       supabase.from("propostas").select("*").eq("cliente_id", clienteId).order("criado_em", { ascending: false }),
       supabase.from("contratos").select("*").eq("cliente_id", clienteId).order("criado_em", { ascending: false }),
-    ]).then(([cRes, pRes, ctRes]) => {
+      supabase.from("tarefas").select("*").eq("cliente_id", clienteId).order("data_vencimento", { ascending: true, nullsFirst: false }),
+    ]).then(([cRes, pRes, ctRes, tRes]) => {
       setCliente(cRes.data);
       setPropostas(pRes.data || []);
       setContratos(ctRes.data || []);
+      setTarefas(tRes.data || []);
       setLoading(false);
     });
   };
@@ -76,6 +87,29 @@ const ClienteDetalhe = () => {
     if (error) { toast.error("Erro ao salvar"); return; }
     toast.success("Cliente atualizado");
     setEditOpen(false);
+    loadData();
+  };
+
+  const handleAddTarefa = async () => {
+    if (!novaTarefa.titulo.trim()) { toast.error("Título é obrigatório"); return; }
+    const { error } = await supabase.from("tarefas").insert({
+      titulo: novaTarefa.titulo,
+      tipo: novaTarefa.tipo,
+      prioridade: novaTarefa.prioridade,
+      cliente_id: clienteId,
+      responsavel_id: user!.id,
+      criado_por: user!.id,
+    } as any);
+    if (error) { toast.error("Erro ao criar tarefa"); return; }
+    toast.success("Tarefa criada");
+    setNovaTarefa({ titulo: "", tipo: "tarefa", prioridade: "media" });
+    setTarefaDialogOpen(false);
+    loadData();
+  };
+
+  const toggleTarefa = async (t: any) => {
+    const novoStatus = t.status === "concluida" ? "pendente" : "concluida";
+    await supabase.from("tarefas").update({ status: novoStatus }).eq("id", t.id);
     loadData();
   };
 
@@ -121,6 +155,9 @@ const ClienteDetalhe = () => {
             <Link to={`/crm/contratos/novo?cliente=${clienteId}`}>
               <Button variant="outline" size="sm"><FilePlus className="w-4 h-4" /> Novo Contrato</Button>
             </Link>
+            <Button variant="outline" size="sm" onClick={() => setTarefaDialogOpen(true)}>
+              <CalendarPlus className="w-4 h-4" /> Nova Tarefa
+            </Button>
             {clientePhone && (
               <Button variant="outline" size="sm" className="text-emerald-400" onClick={() => setShowChat(!showChat)}>
                 <MessageCircle className="w-4 h-4" /> {showChat ? "Fechar Chat" : "WhatsApp"}
@@ -180,6 +217,44 @@ const ClienteDetalhe = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Tarefas do Cliente */}
+      <div className="glass-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" /> Tarefas ({tarefas.length})
+          </h2>
+          <Button variant="outline" size="sm" onClick={() => setTarefaDialogOpen(true)}>
+            <CalendarPlus className="w-4 h-4" /> Nova Tarefa
+          </Button>
+        </div>
+        {tarefas.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma tarefa vinculada.</p>
+        ) : (
+          <div className="space-y-2">
+            {tarefas.map(t => (
+              <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
+                <button onClick={() => toggleTarefa(t)}>
+                  {t.status === "concluida" ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                  )}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <span className={`text-sm ${t.status === "concluida" ? "line-through opacity-60" : ""}`}>{t.titulo}</span>
+                  {t.data_vencimento && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {format(new Date(t.data_vencimento), "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                  )}
+                </div>
+                <Badge variant="outline" className="text-[10px]">{t.tipo}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* WhatsApp Chat Panel */}
@@ -245,6 +320,48 @@ const ClienteDetalhe = () => {
             <Button variant="hero" className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar Alterações"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Task Dialog */}
+      <Dialog open={tarefaDialogOpen} onOpenChange={setTarefaDialogOpen}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Tarefa para {cliente.nome}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Título *</label>
+              <Input value={novaTarefa.titulo} onChange={e => setNovaTarefa({ ...novaTarefa, titulo: e.target.value })} className="bg-background/50" placeholder="Ex: Reunião de briefing" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo</label>
+                <Select value={novaTarefa.tipo} onValueChange={v => setNovaTarefa({ ...novaTarefa, tipo: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tarefa">Tarefa</SelectItem>
+                    <SelectItem value="reuniao">Reunião</SelectItem>
+                    <SelectItem value="lembrete">Lembrete</SelectItem>
+                    <SelectItem value="prazo">Prazo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Prioridade</label>
+                <Select value={novaTarefa.prioridade} onValueChange={v => setNovaTarefa({ ...novaTarefa, prioridade: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="media">Média</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button variant="hero" className="w-full" onClick={handleAddTarefa}>Criar Tarefa</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -50,10 +50,12 @@ const ClienteDetalhe = () => {
       supabase.from("clientes").select("*").eq("id", clienteId).single(),
       supabase.from("propostas").select("*").eq("cliente_id", clienteId).order("criado_em", { ascending: false }),
       supabase.from("contratos").select("*").eq("cliente_id", clienteId).order("criado_em", { ascending: false }),
-    ]).then(([cRes, pRes, ctRes]) => {
+      supabase.from("tarefas").select("*").eq("cliente_id", clienteId).order("data_vencimento", { ascending: true, nullsFirst: false }),
+    ]).then(([cRes, pRes, ctRes, tRes]) => {
       setCliente(cRes.data);
       setPropostas(pRes.data || []);
       setContratos(ctRes.data || []);
+      setTarefas(tRes.data || []);
       setLoading(false);
     });
   };

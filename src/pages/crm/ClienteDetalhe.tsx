@@ -90,6 +90,28 @@ const ClienteDetalhe = () => {
     loadData();
   };
 
+  const handleAddTarefa = async () => {
+    if (!novaTarefa.titulo.trim()) { toast.error("Título é obrigatório"); return; }
+    const { error } = await supabase.from("tarefas").insert({
+      titulo: novaTarefa.titulo,
+      tipo: novaTarefa.tipo,
+      prioridade: novaTarefa.prioridade,
+      cliente_id: clienteId,
+      responsavel_id: user!.id,
+      criado_por: user!.id,
+    } as any);
+    if (error) { toast.error("Erro ao criar tarefa"); return; }
+    toast.success("Tarefa criada");
+    setNovaTarefa({ titulo: "", tipo: "tarefa", prioridade: "media" });
+    setTarefaDialogOpen(false);
+    loadData();
+  };
+
+  const toggleTarefa = async (t: any) => {
+    const novoStatus = t.status === "concluida" ? "pendente" : "concluida";
+    await supabase.from("tarefas").update({ status: novoStatus }).eq("id", t.id);
+    loadData();
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
   if (!cliente) return <div className="p-8 text-center">Cliente não encontrado</div>;
 

@@ -124,9 +124,9 @@ const CRMAgenda = () => {
     const payload = {
       titulo: form.titulo,
       descricao: form.descricao || null,
-      tipo: form.tipo,
-      prioridade: form.prioridade,
-      status: form.status,
+      tipo: form.tipo as "tarefa" | "reuniao" | "lembrete" | "prazo",
+      prioridade: form.prioridade as "baixa" | "media" | "alta" | "urgente",
+      status: form.status as "pendente" | "em_andamento" | "concluida" | "cancelada",
       data_vencimento: form.data_vencimento?.toISOString() || null,
       cliente_id: form.cliente_id || null,
       proposta_id: form.proposta_id || null,
@@ -142,7 +142,7 @@ const CRMAgenda = () => {
         ...payload,
         responsavel_id: user!.id,
         criado_por: user!.id,
-      });
+      } as any);
       if (error) { toast.error("Erro ao criar tarefa"); setSaving(false); return; }
       toast.success("Tarefa criada");
     }

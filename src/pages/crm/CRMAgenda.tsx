@@ -119,9 +119,9 @@ const CRMAgenda = () => {
     setForm({
       titulo: t.titulo,
       descricao: t.descricao || "",
-      tipo: t.tipo,
-      prioridade: t.prioridade,
-      status: t.status,
+      tipo: t.tipo as FormState["tipo"],
+      prioridade: t.prioridade as FormState["prioridade"],
+      status: t.status as FormState["status"],
       data_vencimento: t.data_vencimento ? new Date(t.data_vencimento) : null,
       cliente_id: t.cliente_id || "",
       proposta_id: t.proposta_id || "",

@@ -53,13 +53,25 @@ const statusColors: Record<string, string> = {
   cancelada: "bg-muted text-muted-foreground",
 };
 
-const emptyForm = {
+type FormState = {
+  titulo: string;
+  descricao: string;
+  tipo: "tarefa" | "reuniao" | "lembrete" | "prazo";
+  prioridade: "baixa" | "media" | "alta" | "urgente";
+  status: "pendente" | "em_andamento" | "concluida" | "cancelada";
+  data_vencimento: Date | null;
+  cliente_id: string;
+  proposta_id: string;
+  contrato_id: string;
+};
+
+const emptyForm: FormState = {
   titulo: "",
   descricao: "",
-  tipo: "tarefa" as const,
-  prioridade: "media" as const,
-  status: "pendente" as const,
-  data_vencimento: null as Date | null,
+  tipo: "tarefa",
+  prioridade: "media",
+  status: "pendente",
+  data_vencimento: null,
   cliente_id: "",
   proposta_id: "",
   contrato_id: "",

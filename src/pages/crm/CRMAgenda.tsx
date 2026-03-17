@@ -424,7 +424,7 @@ const CRMAgenda = () => {
             {editId && (
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
-                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as FormState["status"] })}>
                   <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendente">Pendente</SelectItem>

@@ -6,31 +6,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+async function fetchInstanceTokenMap(url: string, key: string): Promise<Map<string, string>> {
+  const resp = await fetch(`${url}/instance/all`, {
+    headers: { apikey: key, "Content-Type": "application/json" },
+  });
+  if (!resp.ok) throw new Error(`/instance/all failed: ${resp.status}`);
+  const data = await resp.json();
+  const list = Array.isArray(data) ? data : (data.instances || data.data || []);
+  const map = new Map<string, string>();
+  for (const i of list) {
+    const name = (i.name || i.Name || i.instanceName || "").toLowerCase();
+    const token = i.token || i.Token || i.apikey || i.apiKey;
+    if (name && token) map.set(name, token);
   }
+  return map;
+}
+
+async function sendText(url: string, token: string, number: string, text: string) {
+  return await fetch(`${url}/send/text`, {
+    method: "POST",
+    headers: { apikey: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ number, text }),
+  });
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
-    const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) throw new Error("Evolution API não configurada");
+    const EVOLUTION_GO_URL = Deno.env.get("EVOLUTION_GO_URL");
+    const EVOLUTION_GO_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY");
+    if (!EVOLUTION_GO_URL || !EVOLUTION_GO_API_KEY) throw new Error("Evolution GO não configurada");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get anti-ban config
     const { data: config } = await supabase.from("whatsapp_config").select("*").limit(1).single();
     if (!config) throw new Error("Configuração não encontrada");
 
-    // Check if current time is within sending window
     const now = new Date();
     const brTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const currentDay = brTime.getDay(); // 0=Sun, 1=Mon...
-    const currentHour = brTime.getHours();
-    const currentMinute = brTime.getMinutes();
-    const currentTimeMinutes = currentHour * 60 + currentMinute;
+    const currentDay = brTime.getDay();
+    const currentTimeMinutes = brTime.getHours() * 60 + brTime.getMinutes();
 
     const [startH, startM] = (config.horario_inicio as string).split(":").map(Number);
     const [endH, endM] = (config.horario_fim as string).split(":").map(Number);
@@ -42,14 +60,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     if (currentTimeMinutes < startMinutes || currentTimeMinutes > endMinutes) {
       return new Response(JSON.stringify({ ok: true, message: "Fora do horário de envio", processed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get pending messages
     const { data: pendentes } = await supabase
       .from("whatsapp_fila")
       .select("*")
@@ -65,28 +81,23 @@ serve(async (req) => {
       });
     }
 
+    const tokenMap = await fetchInstanceTokenMap(EVOLUTION_GO_URL, EVOLUTION_GO_API_KEY);
+
     let processed = 0;
     let errors = 0;
 
     for (const msg of pendentes) {
-      // Mark as processing
       await supabase.from("whatsapp_fila").update({ status: "processando" }).eq("id", msg.id);
 
-      // Simulate typing delay
       const typingDelay = (config.digitacao_min + Math.random() * (config.digitacao_max - config.digitacao_min)) * 1000;
       await new Promise(r => setTimeout(r, typingDelay));
 
       try {
-        const sendResp = await fetch(`${EVOLUTION_API_URL}/message/sendText/${msg.instancia}`, {
-          method: "POST",
-          headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ number: msg.telefone, text: msg.mensagem }),
-        });
+        const token = tokenMap.get((msg.instancia || "").toLowerCase());
+        if (!token) throw new Error(`Instância "${msg.instancia}" não encontrada na Evolution GO`);
 
-        if (!sendResp.ok) {
-          const errText = await sendResp.text();
-          throw new Error(errText);
-        }
+        const sendResp = await sendText(EVOLUTION_GO_URL, token, msg.telefone, msg.mensagem);
+        if (!sendResp.ok) throw new Error(await sendResp.text());
 
         await supabase.from("whatsapp_fila").update({
           status: "enviado",
@@ -103,7 +114,6 @@ serve(async (req) => {
         errors++;
       }
 
-      // Wait interval between messages
       if (processed < pendentes.length) {
         const interval = (config.intervalo_min + Math.random() * (config.intervalo_max - config.intervalo_min)) * 1000;
         await new Promise(r => setTimeout(r, interval));

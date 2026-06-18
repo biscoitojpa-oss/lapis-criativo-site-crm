@@ -6,23 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Sleep helper */
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Random int between min and max (inclusive) */
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-/** Split a long message into smaller chunks by paragraphs, keeping each under ~500 chars */
 function splitMessage(text: string): string[] {
   const paragraphs = text.split(/\n{2,}/);
   const chunks: string[] = [];
   let current = "";
-
   for (const para of paragraphs) {
     const trimmed = para.trim();
     if (!trimmed) continue;
-
-    // If adding this paragraph makes it too long, push current and start new
     if (current && (current.length + trimmed.length + 2) > 500) {
       chunks.push(current.trim());
       current = trimmed;
@@ -30,12 +23,7 @@ function splitMessage(text: string): string[] {
       current = current ? `${current}\n\n${trimmed}` : trimmed;
     }
   }
-
-  if (current.trim()) {
-    chunks.push(current.trim());
-  }
-
-  // If we only got 1 chunk but it's long, try splitting by sentences
+  if (current.trim()) chunks.push(current.trim());
   if (chunks.length === 1 && chunks[0].length > 600) {
     const sentences = chunks[0].split(/(?<=[.!?])\s+/);
     const sentenceChunks: string[] = [];
@@ -51,74 +39,73 @@ function splitMessage(text: string): string[] {
     if (curr.trim()) sentenceChunks.push(curr.trim());
     if (sentenceChunks.length > 1) return sentenceChunks;
   }
-
   return chunks.length > 0 ? chunks : [text];
 }
 
-/** Download media from Evolution API */
-async function downloadMedia(
-  evolutionUrl: string,
-  apiKey: string,
-  instanceName: string,
-  messageData: any
-): Promise<{ base64: string; mimeType: string } | null> {
-  try {
-    // Try mediaUrl first (some versions provide it directly)
-    const mediaUrl = messageData.message?.mediaUrl || messageData.mediaUrl;
-    if (mediaUrl) {
-      const resp = await fetch(mediaUrl);
-      if (resp.ok) {
-        const buffer = await resp.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-        const mimeType = resp.headers.get("content-type") || "application/octet-stream";
-        return { base64, mimeType };
+/** Extract message text and type from Evolution GO webhook payload */
+function extractMessage(payload: any): { phone: string; pushName: string; text: string; type: string; mediaBase64?: string; mediaMime?: string; instanceName: string; fromMe: boolean } {
+  // Evolution GO payload shape (whatsmeow-based):
+  //   { event: "Message", instance: { name, instanceId }, data: { Info: {...}, Message: {...} } }
+  // Fallback: legacy Evolution v2 shape { event: "messages.upsert", instance, data: { key, message, pushName } }
+  const data = payload.data || payload;
+  const Info = data.Info || data.info;
+  const Message = data.Message || data.message;
+  const instanceName = payload.instance?.name || payload.instance || payload.instanceName || "";
+
+  if (Info) {
+    // Evolution GO native shape
+    const remoteJid: string = Info.Chat || Info.RemoteJid || Info.remoteJid || "";
+    const phone = remoteJid.replace(/@s\.whatsapp\.net|@g\.us|@c\.us/, "");
+    const pushName = Info.PushName || Info.Notify || phone;
+    const fromMe = !!(Info.IsFromMe || Info.FromMe || Info.fromMe);
+
+    let text = "";
+    let type = "text";
+    let mediaBase64: string | undefined;
+    let mediaMime: string | undefined;
+
+    if (Message) {
+      if (Message.conversation) {
+        text = Message.conversation;
+      } else if (Message.extendedTextMessage?.text) {
+        text = Message.extendedTextMessage.text;
+      } else if (Message.imageMessage) {
+        type = "image";
+        text = Message.imageMessage.caption || "";
+        mediaBase64 = Message.imageMessage.base64 || Message.imageMessage.Base64;
+        mediaMime = Message.imageMessage.mimetype || "image/jpeg";
+      } else if (Message.videoMessage) {
+        type = "video";
+        text = Message.videoMessage.caption || "";
+        mediaBase64 = Message.videoMessage.base64 || Message.videoMessage.Base64;
+        mediaMime = Message.videoMessage.mimetype || "video/mp4";
+      } else if (Message.audioMessage) {
+        type = "audio";
+        mediaBase64 = Message.audioMessage.base64 || Message.audioMessage.Base64;
+        mediaMime = Message.audioMessage.mimetype || "audio/ogg";
+      } else if (Message.documentMessage) {
+        type = "document";
+        text = Message.documentMessage.caption || Message.documentMessage.fileName || "";
+        mediaBase64 = Message.documentMessage.base64 || Message.documentMessage.Base64;
+        mediaMime = Message.documentMessage.mimetype;
+      } else if (Message.stickerMessage) {
+        type = "sticker";
+        mediaBase64 = Message.stickerMessage.base64 || Message.stickerMessage.Base64;
+        mediaMime = Message.stickerMessage.mimetype || "image/webp";
       }
     }
 
-    // Use Evolution API media endpoint
-    const messageId = messageData.key?.id;
-    if (!messageId) return null;
-
-    const resp = await fetch(`${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
-      method: "POST",
-      headers: { apikey: apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ message: { key: messageData.key }, convertToMp4: false }),
-    });
-
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.base64) {
-        const mimeType = data.mimetype || data.mimeType || "application/octet-stream";
-        return { base64: data.base64, mimeType };
-      }
-    }
-  } catch (e) {
-    console.error("Media download error:", e);
+    return { phone, pushName, text, type, mediaBase64, mediaMime, instanceName, fromMe };
   }
-  return null;
-}
 
-/** Get message type from Evolution API payload */
-function getMessageType(message: any): string {
-  if (message.audioMessage || message.message?.audioMessage) return "audio";
-  if (message.imageMessage || message.message?.imageMessage) return "image";
-  if (message.videoMessage || message.message?.videoMessage) return "video";
-  if (message.documentMessage || message.message?.documentMessage) return "document";
-  if (message.stickerMessage || message.message?.stickerMessage) return "sticker";
-  return "text";
-}
-
-/** Get caption from media messages */
-function getCaption(message: any): string {
-  return (
-    message.imageMessage?.caption ||
-    message.message?.imageMessage?.caption ||
-    message.videoMessage?.caption ||
-    message.message?.videoMessage?.caption ||
-    message.documentMessage?.caption ||
-    message.message?.documentMessage?.caption ||
-    ""
-  );
+  // Legacy fallback
+  const messageKey = data.key;
+  const remoteJid: string = messageKey?.remoteJid || "";
+  const phone = remoteJid.replace(/@s\.whatsapp\.net|@g\.us|@c\.us/, "");
+  const pushName = data.pushName || phone;
+  const fromMe = !!messageKey?.fromMe;
+  const text = data.message?.conversation || data.message?.extendedTextMessage?.text || "";
+  return { phone, pushName, text, type: "text", instanceName, fromMe };
 }
 
 serve(async (req) => {
@@ -128,36 +115,22 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("Webhook received:", JSON.stringify(body).slice(0, 500));
+    console.log("Webhook received:", JSON.stringify(body).slice(0, 600));
 
-    const event = body.event || body.data?.event;
-    if (event !== "messages.upsert" && event !== "message") {
-      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const event = body.event || body.data?.event || "";
+    const allowedEvents = ["Message", "message", "messages.upsert", "MESSAGE"];
+    if (!allowedEvents.includes(event)) {
+      return new Response(JSON.stringify({ ok: true, ignored: event }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const message = body.data || body;
-    const messageKey = message.key || message.message?.key;
-    if (!message || messageKey?.fromMe) {
+    const { phone, pushName, text: messageText, type: msgType, mediaBase64, mediaMime, instanceName, fromMe } = extractMessage(body);
+
+    if (fromMe || !phone || phone.includes("@g.us")) {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const remoteJid = messageKey?.remoteJid || "";
-    // Ignore group messages
-    if (remoteJid.includes("@g.us")) {
-      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const phone = remoteJid.replace("@s.whatsapp.net", "").replace("@g.us", "");
-    const instanceName = body.instance || "default";
-    const pushName = message.pushName || phone;
-    const msgType = getMessageType(message);
-    const messageText = message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      getCaption(message) || "";
 
     console.log(`Message from ${phone} (${pushName}): type=${msgType} text="${messageText}"`);
 
-    // If no text and no media, ignore
     if (!messageText && msgType === "text") {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -166,12 +139,39 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")!;
-    const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY")!;
+    const EVOLUTION_GO_URL = Deno.env.get("EVOLUTION_GO_URL")!;
+    const EVOLUTION_GO_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) throw new Error("Evolution API não configurada");
+    if (!EVOLUTION_GO_URL || !EVOLUTION_GO_API_KEY) throw new Error("Evolution GO não configurada");
+
+    // Resolve instance token
+    const instResp = await fetch(`${EVOLUTION_GO_URL}/instance/all`, {
+      headers: { apikey: EVOLUTION_GO_API_KEY, "Content-Type": "application/json" },
+    });
+    const instData = instResp.ok ? await instResp.json() : {};
+    const instList = Array.isArray(instData) ? instData : (instData.instances || instData.data || []);
+    const tokenMap = new Map<string, string>();
+    for (const i of instList) {
+      const n = (i.name || i.Name || i.instanceName || "").toLowerCase();
+      const t = i.token || i.Token || i.apikey || i.apiKey;
+      if (n && t) tokenMap.set(n, t);
+    }
+    const instanceToken = tokenMap.get(instanceName.toLowerCase());
+
+    const sendText = async (text: string) => {
+      if (!instanceToken) {
+        console.error(`Instance token not found for ${instanceName}`);
+        return;
+      }
+      const r = await fetch(`${EVOLUTION_GO_URL}/send/text`, {
+        method: "POST",
+        headers: { apikey: instanceToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ number: phone, text }),
+      });
+      if (!r.ok) console.error("send/text error:", r.status, await r.text());
+    };
 
     // Save incoming message
     const incomingLabel = msgType === "text" ? messageText : `[${msgType}] ${messageText || "Mídia recebida"}`;
@@ -184,23 +184,22 @@ serve(async (req) => {
       tipo: msgType,
     });
 
-    // Cancel any pending auto follow-ups since client is active
+    // Cancel pending auto follow-ups
     await supabase.from("whatsapp_followups")
       .update({ status: "cancelado", atualizado_em: new Date().toISOString(), erro: "Cliente respondeu" })
       .eq("telefone", phone)
       .eq("status", "agendado")
       .eq("origem", "auto");
 
-    // ===== HUMAN HANDOFF CHECK =====
-    // Check if human handoff is active for this phone
+    // Handoff check
     const { data: handoff } = await supabase
       .from("whatsapp_handoff")
       .select("*")
       .eq("telefone", phone)
       .eq("ativo", true)
-      .single();
+      .maybeSingle();
 
-    // Notify all team members about the incoming message
+    // Notify team
     const { data: allProfiles } = await supabase.from("profiles").select("user_id");
     if (allProfiles) {
       for (const p of allProfiles) {
@@ -215,13 +214,12 @@ serve(async (req) => {
     }
 
     if (handoff) {
-      console.log(`Handoff ativo para ${phone}, agente pausado. Aguardando humano.`);
+      console.log(`Handoff ativo para ${phone}, agente pausado.`);
       return new Response(JSON.stringify({ ok: true, handoff: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if user wants to talk to a human
     const humanKeywords = [
       "falar com humano", "falar com alguém", "falar com alguem", "atendente",
       "falar com pessoa", "pessoa real", "atendimento humano", "falar com a equipe",
@@ -238,18 +236,13 @@ serve(async (req) => {
       );
 
       const handoffMsg = "Entendido! 😊 Vou transferir você para um de nossos consultores. Ele vai te responder em breve. Fique à vontade!";
-      await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
-        method: "POST",
-        headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ number: phone, text: handoffMsg }),
-      });
+      await sendText(handoffMsg);
 
       await supabase.from("whatsapp_mensagens").insert({
         telefone: phone, nome_contato: "Criativo X",
         mensagem: handoffMsg, direcao: "enviada", instancia: instanceName,
       });
 
-      // Notify team about handoff
       if (allProfiles) {
         for (const p of allProfiles) {
           await supabase.from("notificacoes").insert({
@@ -268,10 +261,9 @@ serve(async (req) => {
       });
     }
 
-    // Build AI messages array
+    // Build AI messages
     const aiMessages: any[] = [];
 
-    // Get conversation history (last 10 messages for context)
     const { data: history } = await supabase
       .from("whatsapp_mensagens")
       .select("mensagem, direcao")
@@ -289,56 +281,45 @@ serve(async (req) => {
       }
     }
 
-    // Handle media messages (audio, image, document)
+    // Build media content (Evolution GO already provides base64 inline)
     let mediaContent: any = null;
-    if (msgType !== "text") {
-      const media = await downloadMedia(EVOLUTION_API_URL, EVOLUTION_API_KEY, instanceName, message);
-      if (media) {
-        if (msgType === "audio") {
-          // Send audio as inline_data to Gemini (supports audio natively)
-          mediaContent = {
-            role: "user",
-            content: [
-              {
-                type: "input_audio",
-                input_audio: {
-                  data: media.base64,
-                  format: media.mimeType.includes("ogg") ? "ogg" : media.mimeType.includes("mp4") ? "mp4" : "wav",
-                },
-              },
-              ...(messageText ? [{ type: "text", text: messageText }] : [{ type: "text", text: "O cliente enviou um áudio. Transcreva e responda ao que ele disse." }]),
-            ],
-          };
-        } else if (msgType === "image" || msgType === "sticker") {
-          mediaContent = {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: { url: `data:${media.mimeType};base64,${media.base64}` },
-              },
-              { type: "text", text: messageText || "O cliente enviou uma imagem. Descreva o que vê e responda de forma útil." },
-            ],
-          };
-        } else if (msgType === "document") {
-          // For documents, mention it in context
-          mediaContent = {
-            role: "user",
-            content: `O cliente enviou um documento. ${messageText || "Responda que você recebeu o documento e vai encaminhar para a equipe analisar."}`,
-          };
-        }
-      } else {
-        // Couldn't download media
+    if (msgType !== "text" && mediaBase64) {
+      if (msgType === "audio") {
         mediaContent = {
           role: "user",
-          content: `O cliente enviou um ${msgType === "audio" ? "áudio" : msgType === "image" ? "imagem" : "documento"}. ${messageText || "Responda que recebeu e que vai verificar com a equipe."}`,
+          content: [
+            {
+              type: "input_audio",
+              input_audio: {
+                data: mediaBase64,
+                format: (mediaMime || "").includes("ogg") ? "ogg" : (mediaMime || "").includes("mp4") ? "mp4" : "wav",
+              },
+            },
+            { type: "text", text: messageText || "O cliente enviou um áudio. Transcreva e responda ao que ele disse." },
+          ],
+        };
+      } else if (msgType === "image" || msgType === "sticker") {
+        mediaContent = {
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: `data:${mediaMime || "image/jpeg"};base64,${mediaBase64}` } },
+            { type: "text", text: messageText || "O cliente enviou uma imagem. Descreva o que vê e responda de forma útil." },
+          ],
+        };
+      } else {
+        mediaContent = {
+          role: "user",
+          content: `O cliente enviou um documento. ${messageText || "Responda que recebeu o documento e vai encaminhar para a equipe."}`,
         };
       }
+    } else if (msgType !== "text") {
+      mediaContent = {
+        role: "user",
+        content: `O cliente enviou um ${msgType === "audio" ? "áudio" : msgType === "image" ? "imagem" : "documento"}. ${messageText || "Responda que recebeu e que vai verificar com a equipe."}`,
+      };
     }
 
-    // Replace or add the last user message with media content
     if (mediaContent) {
-      // Remove the last user message (already added from history) and add media version
       if (aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === "user") {
         aiMessages[aiMessages.length - 1] = mediaContent;
       } else {
@@ -348,7 +329,6 @@ serve(async (req) => {
       aiMessages.push({ role: "user", content: messageText });
     }
 
-    // Get knowledge base
     const { data: knowledge } = await supabase
       .from("base_conhecimento")
       .select("titulo, conteudo, categoria")
@@ -386,19 +366,12 @@ FLUXO DE HANDOFF:
 - Se o cliente RECUSAR o handoff (ex: "não precisa", "agora não", "depois", "não quero"), responda que tudo bem e encerre o assunto de forma educada. Inclua EXATAMENTE o texto "[FOLLOWUP_DECLINED]" no final da sua resposta (será invisível para o cliente). Isso agendará automaticamente um follow-up.
 - Se o cliente aceitar, transfira normalmente.`;
 
-    // Call AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...aiMessages,
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...aiMessages],
       }),
     });
 
@@ -410,13 +383,10 @@ FLUXO DE HANDOFF:
     const aiData = await aiResponse.json();
     let fullReply = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem. Vou encaminhar para nossa equipe! 🙏";
 
-    // Check if AI detected follow-up decline
     const followupDeclined = fullReply.includes("[FOLLOWUP_DECLINED]");
     if (followupDeclined) {
-      // Remove the tag from the reply
       fullReply = fullReply.replace("[FOLLOWUP_DECLINED]", "").trim();
 
-      // Schedule a follow-up for 24h later
       const followupDate = new Date();
       followupDate.setHours(followupDate.getHours() + 24);
       if (followupDate.getHours() < 10) followupDate.setHours(10, 0, 0, 0);
@@ -425,10 +395,9 @@ FLUXO DE HANDOFF:
         followupDate.setHours(10, 0, 0, 0);
       }
 
-      // Generate a personalized follow-up message based on conversation context
       const recentMessages = aiMessages.slice(-6).map((m: any) => {
-        const text = typeof m.content === "string" ? m.content : "[mídia]";
-        return `${m.role === "user" ? "Cliente" : "Agente"}: ${text}`;
+        const t = typeof m.content === "string" ? m.content : "[mídia]";
+        return `${m.role === "user" ? "Cliente" : "Agente"}: ${t}`;
       }).join("\n");
 
       let followupMsg = `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Estou por aqui! 🚀`;
@@ -436,43 +405,31 @@ FLUXO DE HANDOFF:
       try {
         const followupAI = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "google/gemini-2.5-flash-lite",
             messages: [
               {
                 role: "system",
                 content: `Você é o Criativo X da Lápis Criativo. Gere UMA mensagem curta de follow-up (máx 2 frases) para WhatsApp.
-A mensagem deve:
-- Ser simpática e natural, como uma pessoa real
-- Referenciar sutilmente o ASSUNTO da última conversa (sem repetir detalhes demais)
-- Convidar o cliente a retomar a conversa
-- Usar 1-2 emojis
-- NÃO mencionar que o cliente recusou falar com humano
-- NÃO usar formatação, listas ou markdown
-Responda APENAS com a mensagem, nada mais.`,
+- Simpática e natural, como pessoa real
+- Referencie sutilmente o ASSUNTO da última conversa
+- Convide o cliente a retomar a conversa
+- Use 1-2 emojis
+- NÃO mencione recusa de humano
+- NÃO use markdown ou listas
+Responda APENAS com a mensagem.`,
               },
-              {
-                role: "user",
-                content: `Nome do cliente: ${pushName || "cliente"}\n\nÚltimas mensagens da conversa:\n${recentMessages}\n\nGere a mensagem de follow-up:`,
-              },
+              { role: "user", content: `Nome: ${pushName || "cliente"}\n\nÚltimas mensagens:\n${recentMessages}\n\nGere a mensagem:` },
             ],
           }),
         });
-
         if (followupAI.ok) {
-          const followupData = await followupAI.json();
-          const generated = followupData.choices?.[0]?.message?.content?.trim();
-          if (generated && generated.length > 10 && generated.length < 500) {
-            followupMsg = generated;
-          }
+          const fd = await followupAI.json();
+          const generated = fd.choices?.[0]?.message?.content?.trim();
+          if (generated && generated.length > 10 && generated.length < 500) followupMsg = generated;
         }
-      } catch (e) {
-        console.error("Follow-up AI generation error:", e);
-      }
+      } catch (e) { console.error("Follow-up AI error:", e); }
 
       await supabase.from("whatsapp_followups").insert({
         telefone: phone,
@@ -483,37 +440,21 @@ Responda APENAS com a mensagem, nada mais.`,
         agendado_para: followupDate.toISOString(),
         origem: "auto",
       });
-
-      console.log(`Follow-up personalizado agendado para ${phone}: "${followupMsg.slice(0, 80)}..."`);
     }
 
-    // Split reply into human-like separate messages
     const messageChunks = splitMessage(fullReply);
     console.log(`Sending ${messageChunks.length} message(s) to ${phone}`);
-
     const allReplies: string[] = [];
 
     for (let i = 0; i < messageChunks.length; i++) {
       const chunk = messageChunks[i];
-
-      // Simulate typing delay (1-3 seconds per message, proportional to length)
       if (i > 0) {
         const typingDelay = randInt(1500, 3000) + Math.min(chunk.length * 15, 3000);
         await sleep(typingDelay);
       }
 
-      // Send message via Evolution API
-      const sendResp = await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
-        method: "POST",
-        headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ number: phone, text: chunk }),
-      });
+      await sendText(chunk);
 
-      if (!sendResp.ok) {
-        console.error("Evolution send error:", await sendResp.text());
-      }
-
-      // Save each chunk as a separate message
       await supabase.from("whatsapp_mensagens").insert({
         telefone: phone,
         nome_contato: "Criativo X",
@@ -525,7 +466,6 @@ Responda APENAS com a mensagem, nada mais.`,
       allReplies.push(chunk);
     }
 
-    // Save/update lead
     await supabase.from("leads").upsert({
       nome: pushName || phone,
       email: `${phone}@whatsapp`,

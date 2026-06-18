@@ -24,12 +24,26 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")!;
-    const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY")!;
+    const EVOLUTION_GO_URL = Deno.env.get("EVOLUTION_GO_URL")!;
+    const EVOLUTION_GO_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY")!;
 
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-      throw new Error("Evolution API não configurada");
+    if (!EVOLUTION_GO_URL || !EVOLUTION_GO_API_KEY) {
+      throw new Error("Evolution GO não configurada");
     }
+
+    // Fetch instance name → token map
+    const instResp = await fetch(`${EVOLUTION_GO_URL}/instance/all`, {
+      headers: { apikey: EVOLUTION_GO_API_KEY, "Content-Type": "application/json" },
+    });
+    const instData = instResp.ok ? await instResp.json() : {};
+    const instList = Array.isArray(instData) ? instData : (instData.instances || instData.data || []);
+    const tokenMap = new Map<string, string>();
+    for (const i of instList) {
+      const n = (i.name || i.Name || i.instanceName || "").toLowerCase();
+      const t = i.token || i.Token || i.apikey || i.apiKey;
+      if (n && t) tokenMap.set(n, t);
+    }
+
 
     const now = new Date();
     const nowISO = now.toISOString();
@@ -350,16 +364,20 @@ ${toneByAttempt[attemptNumber] || toneByAttempt[1]}
           continue;
         }
 
-        // Send message
-        const sendResp = await fetch(`${EVOLUTION_API_URL}/message/sendText/${fu.instancia}`, {
+        // Send message via Evolution GO
+        const fuToken = tokenMap.get((fu.instancia || "").toLowerCase());
+        if (!fuToken) throw new Error(`Instância "${fu.instancia}" não encontrada na Evolution GO`);
+
+        const sendResp = await fetch(`${EVOLUTION_GO_URL}/send/text`, {
           method: "POST",
-          headers: { apikey: EVOLUTION_API_KEY, "Content-Type": "application/json" },
+          headers: { apikey: fuToken, "Content-Type": "application/json" },
           body: JSON.stringify({ number: fu.telefone, text: fu.mensagem }),
         });
 
         if (!sendResp.ok) {
-          throw new Error(`Evolution API error: ${await sendResp.text()}`);
+          throw new Error(`Evolution GO error: ${await sendResp.text()}`);
         }
+
 
         await supabase.from("whatsapp_mensagens").insert({
           telefone: fu.telefone,

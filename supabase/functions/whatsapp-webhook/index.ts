@@ -221,6 +221,19 @@ serve(async (req) => {
       });
     }
 
+    // ===== GLOBAL AGENT PAUSE CHECK =====
+    const { data: globalCfg } = await supabase
+      .from("whatsapp_config")
+      .select("agente_pausado")
+      .limit(1)
+      .single();
+    if (globalCfg?.agente_pausado) {
+      console.log(`Agente Criativo X pausado globalmente. Mensagem de ${phone} registrada mas sem resposta automática.`);
+      return new Response(JSON.stringify({ ok: true, paused: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Check if user wants to talk to a human
     const humanKeywords = [
       "falar com humano", "falar com alguém", "falar com alguem", "atendente",

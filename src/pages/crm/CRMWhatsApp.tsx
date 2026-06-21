@@ -58,6 +58,7 @@ interface AntiBanConfig {
   followup_horario_inicio: string;
   followup_horario_fim: string;
   followup_ativo: boolean;
+  agente_pausado: boolean;
 }
 
 const CRMWhatsApp = () => {

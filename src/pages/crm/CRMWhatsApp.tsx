@@ -466,12 +466,42 @@ const CRMWhatsApp = () => {
     toast.success("URL copiada!");
   };
 
+  const toggleAgentePausado = async () => {
+    if (!config) return;
+    const novo = !config.agente_pausado;
+    const { error } = await supabase.from("whatsapp_config").update({ agente_pausado: novo }).eq("id", config.id);
+    if (error) { toast.error(error.message); return; }
+    setConfig({ ...config, agente_pausado: novo });
+    toast.success(novo ? "Agente Criativo X pausado globalmente" : "Agente Criativo X reativado");
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">WhatsApp & Criativo X</h1>
-        <p className="text-sm text-muted-foreground">Gerencie instâncias, métricas do agente e configurações de envio</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-2xl font-bold">WhatsApp & Criativo X</h1>
+          <p className="text-sm text-muted-foreground">Gerencie instâncias, métricas do agente e configurações de envio</p>
+        </div>
+        <Button
+          onClick={toggleAgentePausado}
+          disabled={!config}
+          variant={config?.agente_pausado ? "default" : "outline"}
+          className={config?.agente_pausado ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}
+        >
+          {config?.agente_pausado ? (
+            <><PlayCircle className="w-4 h-4 mr-1.5" />Reativar Agente</>
+          ) : (
+            <><Pause className="w-4 h-4 mr-1.5" />Pausar Agente</>
+          )}
+        </Button>
       </div>
+
+      {config?.agente_pausado && (
+        <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-400 flex items-center gap-2">
+          <Pause className="w-4 h-4" />
+          Agente Criativo X está <strong>pausado globalmente</strong>. Mensagens recebidas não serão respondidas automaticamente até reativar.
+        </div>
+      )}
 
       <Tabs defaultValue="conversas" className="space-y-4">
         <TabsList className="bg-muted/30 border border-border/50">

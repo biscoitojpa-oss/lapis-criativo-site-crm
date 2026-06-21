@@ -1,0 +1,1 @@
+ALTER TABLE public.whatsapp_config ADD COLUMN IF NOT EXISTS agente_pausado boolean NOT NULL DEFAULT false;

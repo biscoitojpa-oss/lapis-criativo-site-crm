@@ -128,7 +128,7 @@ const CRMWhatsApp = () => {
   // Instâncias permitidas no CRM (apenas essas aparecerão)
   const [allowedInstances, setAllowedInstances] = useState<string[]>(() => {
     const saved = localStorage.getItem("crm_allowed_instances");
-    return saved ? JSON.parse(saved) : ["lapismaster"];
+    return saved ? JSON.parse(saved) : ["lapismaster", "lapis"];
   });
   const [newAllowedInstance, setNewAllowedInstance] = useState("");
 

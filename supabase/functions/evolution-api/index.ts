@@ -5,216 +5,88 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Evolution GO adapter
- * Docs: https://pool-evolution-go-008.cloud.pageup.dev.br/swagger/index.html
- *
- * Auth model:
- *  - Global endpoints (/instance/all, /instance/create, /instance/delete/{id},
- *    /instance/get/{id}, /instance/forcereconnect/{id}) → apikey: GLOBAL_KEY
- *  - Per-instance endpoints (/send/*, /instance/status, /instance/qr,
- *    /instance/connect, /instance/disconnect, /instance/logout, /chat/*, etc.)
- *    → apikey: <instance token returned at create time>
- *
- * The instance is identified by the apikey header (no path/name segment).
- *
- * To preserve compatibility with the previous code that called instances by
- * name, we cache name → { instanceId, token } from /instance/all on every
- * request that needs it.
- */
-
-const GLOBAL_URL = Deno.env.get("EVOLUTION_GO_URL");
-const GLOBAL_KEY = Deno.env.get("EVOLUTION_GO_API_KEY");
-
-type InstanceMeta = { instanceId: string; token: string; name: string; connectionStatus: string };
-
-async function fetchAllInstances(): Promise<any[]> {
-  const resp = await fetch(`${GLOBAL_URL}/instance/all`, {
-    headers: { apikey: GLOBAL_KEY!, "Content-Type": "application/json" },
-  });
-  if (!resp.ok) throw new Error(`fetch instances failed: ${resp.status} ${await resp.text()}`);
-  const data = await resp.json();
-  // Evolution GO returns gin.H — could be { instances: [...] } or an array
-  const list = Array.isArray(data) ? data : (data.instances || data.data || []);
-  return list;
-}
-
-function normalizeInstance(raw: any): InstanceMeta {
-  return {
-    instanceId: raw.instanceId || raw.id || raw.InstanceID || raw.ID || "",
-    token: raw.token || raw.Token || raw.apikey || raw.apiKey || "",
-    name: raw.name || raw.Name || raw.instanceName || "",
-    connectionStatus: raw.connectionStatus || raw.status || raw.state || raw.Status || "unknown",
-  };
-}
-
-async function resolveInstance(nameOrId: string): Promise<InstanceMeta> {
-  const list = await fetchAllInstances();
-  const normalized = list.map(normalizeInstance);
-  const found = normalized.find(
-    (i) => i.name?.toLowerCase() === nameOrId.toLowerCase() || i.instanceId === nameOrId
-  );
-  if (!found) throw new Error(`Instance "${nameOrId}" not found`);
-  return found;
-}
-
-async function callInstance(method: string, path: string, token: string, body?: any) {
-  const resp = await fetch(`${GLOBAL_URL}${path}`, {
-    method,
-    headers: { apikey: token, "Content-Type": "application/json" },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  const text = await resp.text();
-  let result: any = {};
-  try { result = text ? JSON.parse(text) : {}; } catch { result = { raw: text }; }
-  if (!resp.ok) throw new Error(result.error || result.message || text || `HTTP ${resp.status}`);
-  return result;
-}
-
-async function callGlobal(method: string, path: string, body?: any) {
-  const resp = await fetch(`${GLOBAL_URL}${path}`, {
-    method,
-    headers: { apikey: GLOBAL_KEY!, "Content-Type": "application/json" },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  const text = await resp.text();
-  let result: any = {};
-  try { result = text ? JSON.parse(text) : {}; } catch { result = { raw: text }; }
-  if (!resp.ok) throw new Error(result.error || result.message || text || `HTTP ${resp.status}`);
-  return result;
-}
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
-    if (!GLOBAL_URL || !GLOBAL_KEY) throw new Error("Evolution GO não configurada (EVOLUTION_GO_URL / EVOLUTION_GO_API_KEY)");
+    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
+    const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+
+    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
+      throw new Error("Evolution API não configurada");
+    }
 
     const { action, instanceName, data } = await req.json();
-    let result: any = {};
+
+    let url = "";
+    let method = "GET";
+    let body: string | undefined;
 
     switch (action) {
-      case "fetchInstances": {
-        const list = await fetchAllInstances();
-        // Return shape compatible with previous frontend: array of { name, connectionStatus, instanceId, token }
-        result = list.map(normalizeInstance);
+      case "fetchInstances":
+        url = `${EVOLUTION_API_URL}/instance/fetchInstances`;
         break;
-      }
-
-      case "connectionState": {
-        const meta = await resolveInstance(instanceName);
-        const state = await callInstance("GET", "/instance/status", meta.token);
-        result = {
-          instance: { instanceName: meta.name, state: state.status || state.state || meta.connectionStatus },
-          state: state.status || state.state || meta.connectionStatus,
-        };
+      case "connectionState":
+        url = `${EVOLUTION_API_URL}/instance/connectionState/${instanceName}`;
         break;
-      }
-
-      case "instanceInfo": {
-        const meta = await resolveInstance(instanceName);
-        // /instance/connect with subscribe to retrieve QR + ensure webhook
-        const subscribeEvents = data?.subscribe || ["MESSAGE", "CONNECTION", "QRCODE", "SEND_MESSAGE"];
-        const webhookUrl = data?.webhookUrl;
-        result = await callInstance("POST", "/instance/connect", meta.token, {
-          subscribe: subscribeEvents,
-          ...(webhookUrl ? { webhookUrl } : {}),
-          immediate: true,
+      case "instanceInfo":
+        url = `${EVOLUTION_API_URL}/instance/connect/${instanceName}`;
+        break;
+      case "createInstance":
+        url = `${EVOLUTION_API_URL}/instance/create`;
+        method = "POST";
+        body = JSON.stringify({
+          instanceName: data?.instanceName || instanceName,
+          integration: data?.integration || "WHATSAPP-BAILEYS",
+          qrcode: true,
+          ...(data?.webhookUrl ? { webhook: { url: data.webhookUrl, byEvents: false, base64: false, events: ["MESSAGES_UPSERT"] } } : {}),
+          ...(data || {}),
         });
         break;
-      }
-
-      case "createInstance": {
-        const name = data?.instanceName || instanceName;
-        const created = await callGlobal("POST", "/instance/create", {
-          name,
-          ...(data?.proxy ? { proxy: data.proxy } : {}),
-          advancedSettings: {
-            alwaysOnline: false,
-            ignoreGroups: true,
-            ignoreStatus: true,
-            readMessages: false,
-            rejectCall: false,
-          },
-        });
-        const meta = normalizeInstance(created.instance || created);
-        // Connect with webhook + QR
-        if (meta.token) {
-          const webhookUrl = data?.webhookUrl;
-          const connectResult = await callInstance("POST", "/instance/connect", meta.token, {
-            subscribe: ["MESSAGE", "CONNECTION", "QRCODE", "SEND_MESSAGE"],
-            ...(webhookUrl ? { webhookUrl } : {}),
-            immediate: true,
-          });
-          // Try to fetch QR
-          try {
-            const qr = await callInstance("GET", "/instance/qr", meta.token);
-            result = { ...created, ...connectResult, qrcode: { base64: qr.qrcode || qr.base64 || qr.qr } };
-          } catch {
-            result = { ...created, ...connectResult };
-          }
-        } else {
-          result = created;
-        }
+      case "deleteInstance":
+        url = `${EVOLUTION_API_URL}/instance/delete/${instanceName}`;
+        method = "DELETE";
         break;
-      }
-
-      case "deleteInstance": {
-        const meta = await resolveInstance(instanceName);
-        result = await callGlobal("DELETE", `/instance/delete/${meta.instanceId}`);
+      case "sendTest":
+        url = `${EVOLUTION_API_URL}/message/sendText/${instanceName}`;
+        method = "POST";
+        body = JSON.stringify(data);
         break;
-      }
-
-      case "sendTest": {
-        const meta = await resolveInstance(instanceName);
-        // TextStruct: { number, text, delay?, ... }
-        const number = (data?.number || "").replace(/\D/g, "");
-        result = await callInstance("POST", "/send/text", meta.token, {
-          number,
-          text: data?.text,
-        });
+      case "logout":
+        url = `${EVOLUTION_API_URL}/instance/logout/${instanceName}`;
+        method = "DELETE";
         break;
-      }
-
-      case "logout": {
-        const meta = await resolveInstance(instanceName);
-        result = await callInstance("DELETE", "/instance/logout", meta.token);
+      case "restart":
+        url = `${EVOLUTION_API_URL}/instance/restart/${instanceName}`;
+        method = "PUT";
         break;
-      }
-
-      case "restart": {
-        const meta = await resolveInstance(instanceName);
-        result = await callGlobal("POST", `/instance/forcereconnect/${meta.instanceId}`, {
-          number: data?.number || "",
-        });
+      case "setWebhook":
+        url = `${EVOLUTION_API_URL}/webhook/set/${instanceName}`;
+        method = "POST";
+        body = JSON.stringify(data);
         break;
-      }
-
-      case "qrcode": {
-        const meta = await resolveInstance(instanceName);
-        result = await callInstance("GET", "/instance/qr", meta.token);
-        break;
-      }
-
-      case "setWebhook": {
-        const meta = await resolveInstance(instanceName);
-        result = await callInstance("POST", "/instance/connect", meta.token, {
-          subscribe: data?.subscribe || ["MESSAGE", "CONNECTION", "QRCODE", "SEND_MESSAGE"],
-          webhookUrl: data?.webhookUrl || data?.url,
-          immediate: true,
-        });
-        break;
-      }
-
       default:
         throw new Error(`Ação desconhecida: ${action}`);
     }
+
+    const resp = await fetch(url, {
+      method,
+      headers: {
+        apikey: EVOLUTION_API_KEY,
+        "Content-Type": "application/json",
+      },
+      ...(body ? { body } : {}),
+    });
+
+    const result = await resp.json();
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Evolution GO error:", e);
+    console.error("Evolution API error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

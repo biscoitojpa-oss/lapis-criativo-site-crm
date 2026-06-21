@@ -674,6 +674,7 @@ export type Database = {
       }
       whatsapp_config: {
         Row: {
+          agente_pausado: boolean
           atualizado_em: string
           criado_em: string
           descanso_max: number
@@ -694,6 +695,7 @@ export type Database = {
           msgs_antes_descanso: number
         }
         Insert: {
+          agente_pausado?: boolean
           atualizado_em?: string
           criado_em?: string
           descanso_max?: number
@@ -714,6 +716,7 @@ export type Database = {
           msgs_antes_descanso?: number
         }
         Update: {
+          agente_pausado?: boolean
           atualizado_em?: string
           criado_em?: string
           descanso_max?: number

@@ -293,7 +293,9 @@ const CRMWhatsApp = () => {
     return () => clearInterval(interval);
   }, [showQrFor, fetchInstances]);
 
+  const saveConfig = async () => {
     if (!config) return;
+
     setSavingConfig(true);
     try {
       const { error } = await supabase.from("whatsapp_config").update({

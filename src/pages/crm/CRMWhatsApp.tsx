@@ -131,10 +131,18 @@ const CRMWhatsApp = () => {
   };
 
   // Instâncias permitidas no CRM (apenas essas aparecerão)
+  const DEFAULT_ALLOWED = ["lapismaster", "lapis"];
   const [allowedInstances, setAllowedInstances] = useState<string[]>(() => {
     const saved = localStorage.getItem("crm_allowed_instances");
-    return saved ? JSON.parse(saved) : ["lapismaster", "lapis"];
+    const parsed: string[] = saved ? JSON.parse(saved) : [];
+    // Mescla padrões para garantir que instâncias oficiais sempre apareçam
+    const merged = Array.from(new Set([...DEFAULT_ALLOWED, ...parsed]));
+    if (JSON.stringify(merged) !== saved) {
+      localStorage.setItem("crm_allowed_instances", JSON.stringify(merged));
+    }
+    return merged;
   });
+
   const [newAllowedInstance, setNewAllowedInstance] = useState("");
 
   const fetchInstances = useCallback(async () => {

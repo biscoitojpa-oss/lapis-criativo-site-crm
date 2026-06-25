@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      agente_audit_log: {
+        Row: {
+          acao: string
+          criado_em: string
+          id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          criado_em?: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          criado_em?: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       base_conhecimento: {
         Row: {
           ativo: boolean

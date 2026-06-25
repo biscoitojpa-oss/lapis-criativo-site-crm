@@ -519,6 +519,13 @@ const CRMWhatsApp = () => {
     const { error } = await supabase.from("whatsapp_config").update({ agente_pausado: novo }).eq("id", config.id);
     if (error) { toast.error(error.message); return; }
     setConfig({ ...config, agente_pausado: novo });
+    if (user) {
+      await supabase.from("agente_audit_log" as any).insert({
+        user_id: user.id,
+        user_email: user.email ?? null,
+        acao: novo ? "pausar" : "reativar",
+      });
+    }
     toast.success(novo ? "Agente Criativo X pausado globalmente" : "Agente Criativo X reativado");
   };
 
@@ -529,19 +536,31 @@ const CRMWhatsApp = () => {
           <h1 className="font-display text-2xl font-bold">WhatsApp & Criativo X</h1>
           <p className="text-sm text-muted-foreground">Gerencie instâncias, métricas do agente e configurações de envio</p>
         </div>
-        <Button
-          onClick={toggleAgentePausado}
-          disabled={!config}
-          variant={config?.agente_pausado ? "default" : "outline"}
-          className={config?.agente_pausado ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}
-        >
-          {config?.agente_pausado ? (
-            <><PlayCircle className="w-4 h-4 mr-1.5" />Reativar Agente</>
-          ) : (
-            <><Pause className="w-4 h-4 mr-1.5" />Pausar Agente</>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Badge
+            variant="outline"
+            className={config?.agente_pausado
+              ? "bg-amber-500/10 text-amber-400 border-amber-500/40"
+              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/40"}
+          >
+            <span className={`w-2 h-2 rounded-full mr-1.5 ${config?.agente_pausado ? "bg-amber-400" : "bg-emerald-400 animate-pulse"}`} />
+            Agente {config?.agente_pausado ? "Pausado" : "Ativo"}
+          </Badge>
+          <Button
+            onClick={toggleAgentePausado}
+            disabled={!config}
+            variant={config?.agente_pausado ? "default" : "outline"}
+            className={config?.agente_pausado ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}
+          >
+            {config?.agente_pausado ? (
+              <><PlayCircle className="w-4 h-4 mr-1.5" />Reativar Agente</>
+            ) : (
+              <><Pause className="w-4 h-4 mr-1.5" />Pausar Agente</>
+            )}
+          </Button>
+        </div>
       </div>
+
 
       {config?.agente_pausado && (
         <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-400 flex items-center gap-2">

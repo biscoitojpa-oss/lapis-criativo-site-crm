@@ -110,6 +110,10 @@ const CRMWhatsApp = () => {
   const [selectedContact, setSelectedContact] = useState<{ phone: string; name: string } | null>(null);
   const [contactSearch, setContactSearch] = useState("");
 
+  // Audit log
+  const [auditLog, setAuditLog] = useState<{ id: string; user_email: string | null; acao: string; criado_em: string }[]>([]);
+
+
   const callEvolution = async (action: string, instanceName?: string, data?: any) => {
     const resp = await fetch(EVOLUTION_URL, {
       method: "POST",
@@ -239,16 +243,59 @@ const CRMWhatsApp = () => {
     finally { setLoadingContacts(false); }
   }, []);
 
+  const fetchAuditLog = useCallback(async () => {
+    const { data } = await supabase
+      .from("agente_audit_log" as any)
+      .select("id, user_email, acao, criado_em")
+      .order("criado_em", { ascending: false })
+      .limit(20);
+    if (data) setAuditLog(data as any);
+  }, []);
+
   useEffect(() => {
     fetchInstances();
     fetchMetrics();
     fetchConfig();
     fetchQueue();
     fetchContacts();
-  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue, fetchContacts]);
+    fetchAuditLog();
+  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue, fetchContacts, fetchAuditLog]);
+
+  // Realtime: whatsapp_config (status do agente) + audit log
+  useEffect(() => {
+    const channel = supabase
+      .channel("agente-status")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "whatsapp_config" }, (payload) => {
+        setConfig((prev) => prev ? { ...prev, ...(payload.new as any) } : (payload.new as any));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "agente_audit_log" }, (payload) => {
+        setAuditLog((prev) => [payload.new as any, ...prev].slice(0, 20));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Polling: detectar conexão da instância quando QR Code estiver aberto
+  useEffect(() => {
+    if (!showQrFor) return;
+    const interval = setInterval(async () => {
+      try {
+        const state = await callEvolution("connectionState", showQrFor);
+        const s = state.instance?.state || state.state || "unknown";
+        setConnectionStates((prev) => ({ ...prev, [showQrFor]: s }));
+        if (s === "open") {
+          toast.success(`✅ Instância "${showQrFor}" conectada com sucesso!`);
+          setShowQrFor(null);
+          fetchInstances();
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [showQrFor, fetchInstances]);
 
   const saveConfig = async () => {
     if (!config) return;
+
     setSavingConfig(true);
     try {
       const { error } = await supabase.from("whatsapp_config").update({
@@ -472,6 +519,13 @@ const CRMWhatsApp = () => {
     const { error } = await supabase.from("whatsapp_config").update({ agente_pausado: novo }).eq("id", config.id);
     if (error) { toast.error(error.message); return; }
     setConfig({ ...config, agente_pausado: novo });
+    if (user) {
+      await supabase.from("agente_audit_log" as any).insert({
+        user_id: user.id,
+        user_email: user.email ?? null,
+        acao: novo ? "pausar" : "reativar",
+      });
+    }
     toast.success(novo ? "Agente Criativo X pausado globalmente" : "Agente Criativo X reativado");
   };
 
@@ -482,19 +536,31 @@ const CRMWhatsApp = () => {
           <h1 className="font-display text-2xl font-bold">WhatsApp & Criativo X</h1>
           <p className="text-sm text-muted-foreground">Gerencie instâncias, métricas do agente e configurações de envio</p>
         </div>
-        <Button
-          onClick={toggleAgentePausado}
-          disabled={!config}
-          variant={config?.agente_pausado ? "default" : "outline"}
-          className={config?.agente_pausado ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}
-        >
-          {config?.agente_pausado ? (
-            <><PlayCircle className="w-4 h-4 mr-1.5" />Reativar Agente</>
-          ) : (
-            <><Pause className="w-4 h-4 mr-1.5" />Pausar Agente</>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Badge
+            variant="outline"
+            className={config?.agente_pausado
+              ? "bg-amber-500/10 text-amber-400 border-amber-500/40"
+              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/40"}
+          >
+            <span className={`w-2 h-2 rounded-full mr-1.5 ${config?.agente_pausado ? "bg-amber-400" : "bg-emerald-400 animate-pulse"}`} />
+            Agente {config?.agente_pausado ? "Pausado" : "Ativo"}
+          </Badge>
+          <Button
+            onClick={toggleAgentePausado}
+            disabled={!config}
+            variant={config?.agente_pausado ? "default" : "outline"}
+            className={config?.agente_pausado ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30" : ""}
+          >
+            {config?.agente_pausado ? (
+              <><PlayCircle className="w-4 h-4 mr-1.5" />Reativar Agente</>
+            ) : (
+              <><Pause className="w-4 h-4 mr-1.5" />Pausar Agente</>
+            )}
+          </Button>
+        </div>
       </div>
+
 
       {config?.agente_pausado && (
         <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-400 flex items-center gap-2">
@@ -911,7 +977,44 @@ const CRMWhatsApp = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Auditoria: Pausa/Reativação do agente */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4" />Histórico de Pausa/Reativação do Agente
+              </CardTitle>
+              <CardDescription className="text-xs">Auditoria de quem pausou ou reativou o Criativo X</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {auditLog.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhum registro ainda.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {auditLog.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-muted/20 border border-border/30 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {log.acao === "pausar" ? (
+                          <Pause className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        ) : (
+                          <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        )}
+                        <span className={log.acao === "pausar" ? "text-amber-400 font-medium" : "text-emerald-400 font-medium"}>
+                          {log.acao === "pausar" ? "Pausou" : "Reativou"}
+                        </span>
+                        <span className="text-muted-foreground truncate">por {log.user_email || "—"}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {new Date(log.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
+
 
         {/* ===== ANTI-BANIMENTO ===== */}
         <TabsContent value="anti-ban" className="space-y-4">

@@ -243,15 +243,56 @@ const CRMWhatsApp = () => {
     finally { setLoadingContacts(false); }
   }, []);
 
+  const fetchAuditLog = useCallback(async () => {
+    const { data } = await supabase
+      .from("agente_audit_log" as any)
+      .select("id, user_email, acao, criado_em")
+      .order("criado_em", { ascending: false })
+      .limit(20);
+    if (data) setAuditLog(data as any);
+  }, []);
+
   useEffect(() => {
     fetchInstances();
     fetchMetrics();
     fetchConfig();
     fetchQueue();
     fetchContacts();
-  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue, fetchContacts]);
+    fetchAuditLog();
+  }, [fetchInstances, fetchMetrics, fetchConfig, fetchQueue, fetchContacts, fetchAuditLog]);
 
-  const saveConfig = async () => {
+  // Realtime: whatsapp_config (status do agente) + audit log
+  useEffect(() => {
+    const channel = supabase
+      .channel("agente-status")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "whatsapp_config" }, (payload) => {
+        setConfig((prev) => prev ? { ...prev, ...(payload.new as any) } : (payload.new as any));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "agente_audit_log" }, (payload) => {
+        setAuditLog((prev) => [payload.new as any, ...prev].slice(0, 20));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Polling: detectar conexão da instância quando QR Code estiver aberto
+  useEffect(() => {
+    if (!showQrFor) return;
+    const interval = setInterval(async () => {
+      try {
+        const state = await callEvolution("connectionState", showQrFor);
+        const s = state.instance?.state || state.state || "unknown";
+        setConnectionStates((prev) => ({ ...prev, [showQrFor]: s }));
+        if (s === "open") {
+          toast.success(`✅ Instância "${showQrFor}" conectada com sucesso!`);
+          setShowQrFor(null);
+          fetchInstances();
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [showQrFor, fetchInstances]);
+
     if (!config) return;
     setSavingConfig(true);
     try {

@@ -977,7 +977,44 @@ const CRMWhatsApp = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Auditoria: Pausa/Reativação do agente */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4" />Histórico de Pausa/Reativação do Agente
+              </CardTitle>
+              <CardDescription className="text-xs">Auditoria de quem pausou ou reativou o Criativo X</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {auditLog.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhum registro ainda.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {auditLog.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-muted/20 border border-border/30 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {log.acao === "pausar" ? (
+                          <Pause className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        ) : (
+                          <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        )}
+                        <span className={log.acao === "pausar" ? "text-amber-400 font-medium" : "text-emerald-400 font-medium"}>
+                          {log.acao === "pausar" ? "Pausou" : "Reativou"}
+                        </span>
+                        <span className="text-muted-foreground truncate">por {log.user_email || "—"}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {new Date(log.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
+
 
         {/* ===== ANTI-BANIMENTO ===== */}
         <TabsContent value="anti-ban" className="space-y-4">

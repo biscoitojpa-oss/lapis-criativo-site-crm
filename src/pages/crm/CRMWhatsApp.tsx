@@ -110,6 +110,10 @@ const CRMWhatsApp = () => {
   const [selectedContact, setSelectedContact] = useState<{ phone: string; name: string } | null>(null);
   const [contactSearch, setContactSearch] = useState("");
 
+  // Audit log
+  const [auditLog, setAuditLog] = useState<{ id: string; user_email: string | null; acao: string; criado_em: string }[]>([]);
+
+
   const callEvolution = async (action: string, instanceName?: string, data?: any) => {
     const resp = await fetch(EVOLUTION_URL, {
       method: "POST",

@@ -14,8 +14,8 @@ serve(async (req) => {
   try {
     const { messages, phone } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY não configurada");
 
     // Get knowledge base
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -43,14 +43,14 @@ REGRAS:
 - Se não souber, diga que vai verificar com a equipe
 - Incentive agendar reunião ou falar com consultor`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
@@ -61,7 +61,7 @@ REGRAS:
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      console.error("AI gateway error:", response.status, detail);
+      console.error("OpenAI error:", response.status, detail);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
@@ -69,7 +69,7 @@ REGRAS:
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Faça um top-up no workspace para o agente voltar a responder." }), {
+        return new Response(JSON.stringify({ error: "Créditos da OpenAI insuficientes. Verifique a conta vinculada à OPENAI_API_KEY." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

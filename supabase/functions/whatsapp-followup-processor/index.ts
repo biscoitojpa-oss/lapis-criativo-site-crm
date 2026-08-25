@@ -21,7 +21,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")!;
@@ -165,7 +165,7 @@ serve(async (req) => {
 
         let followupMsg = `Oi ${info.nome?.split(" ")[0] || ""}! 😊 Tudo bem? Faz um tempinho que não conversamos. Se precisar de algo, estou por aqui!`;
 
-        if (LOVABLE_API_KEY) {
+        if (OPENAI_API_KEY) {
           try {
             const toneByAttempt: Record<number, string> = {
               1: "Seja leve e amigável. Referencie sutilmente o assunto da última conversa.",
@@ -173,14 +173,14 @@ serve(async (req) => {
               3: "Seja carinhoso e final. Diga que está à disposição e que é a última mensagem para não incomodar.",
             };
 
-            const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
               method: "POST",
               headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "google/gemini-2.5-flash-lite",
+                model: "gpt-4o-mini",
                 messages: [
                   {
                     role: "system",

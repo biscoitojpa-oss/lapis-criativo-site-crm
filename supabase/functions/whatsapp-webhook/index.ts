@@ -168,9 +168,9 @@ serve(async (req) => {
 
     const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")!;
     const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY não configurada");
     if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) throw new Error("Evolution API não configurada");
 
     // Save incoming message
@@ -308,19 +308,9 @@ serve(async (req) => {
       const media = await downloadMedia(EVOLUTION_API_URL, EVOLUTION_API_KEY, instanceName, message);
       if (media) {
         if (msgType === "audio") {
-          // Send audio as inline_data to Gemini (supports audio natively)
           mediaContent = {
             role: "user",
-            content: [
-              {
-                type: "input_audio",
-                input_audio: {
-                  data: media.base64,
-                  format: media.mimeType.includes("ogg") ? "ogg" : media.mimeType.includes("mp4") ? "mp4" : "wav",
-                },
-              },
-              ...(messageText ? [{ type: "text", text: messageText }] : [{ type: "text", text: "O cliente enviou um áudio. Transcreva e responda ao que ele disse." }]),
-            ],
+            content: messageText || "O cliente enviou um áudio. Responda que recebeu e vai verificar com a equipe.",
           };
         } else if (msgType === "image" || msgType === "sticker") {
           mediaContent = {
@@ -400,14 +390,14 @@ FLUXO DE HANDOFF:
 - Se o cliente aceitar, transfira normalmente.`;
 
     // Call AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           ...aiMessages,
@@ -447,14 +437,14 @@ FLUXO DE HANDOFF:
       let followupMsg = `Oi ${pushName?.split(" ")[0] || ""}! 😊 Tudo bem? Conversamos outro dia e fiquei pensando se posso te ajudar com algo. Estou por aqui! 🚀`;
 
       try {
-        const followupAI = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const followupAI = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",

@@ -60,12 +60,22 @@ REGRAS:
     });
 
     if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error("AI gateway error:", response.status, detail);
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido." }), {
+        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error("Erro no serviço de IA");
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Faça um top-up no workspace para o agente voltar a responder." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Serviço de IA indisponível no momento." }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // If phone provided, also send via Evolution API

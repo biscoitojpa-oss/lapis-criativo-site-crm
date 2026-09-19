@@ -53,8 +53,8 @@ const WhatsAppChat = ({ phone, contactName, instanceName: defaultInstance }: Wha
   const allowedInstances: string[] = (() => {
     try {
       const saved = localStorage.getItem("crm_allowed_instances");
-      return saved ? JSON.parse(saved) : ["lapismaster", "lapis"];
-    } catch { return ["lapismaster", "lapis"]; }
+      return saved ? JSON.parse(saved) : ["lapismaster", "lapis", "lapiscriativo"];
+    } catch { return ["lapismaster", "lapis", "lapiscriativo"]; }
   })();
 
   // Fetch available instances

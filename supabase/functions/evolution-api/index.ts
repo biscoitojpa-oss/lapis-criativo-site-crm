@@ -75,6 +75,9 @@ serve(async (req) => {
         method = "POST";
         body = JSON.stringify(data);
         break;
+      case "getWebhook":
+        url = `${EVOLUTION_API_URL}/webhook/find/${instanceName}`;
+        break;
       default:
         throw new Error(`Ação desconhecida: ${action}`);
     }
@@ -88,9 +91,16 @@ serve(async (req) => {
       ...(body ? { body } : {}),
     });
 
-    const result = await resp.json();
+    const responseText = await resp.text();
+    let result: unknown;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      result = { error: responseText || "Resposta inválida da Evolution API" };
+    }
 
     return new Response(JSON.stringify(result), {
+      status: resp.status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

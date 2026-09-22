@@ -78,6 +78,15 @@ serve(async (req) => {
       case "getWebhook":
         url = `${EVOLUTION_API_URL}/webhook/find/${instanceName}`;
         break;
+      case "deleteWebhook":
+        url = `${EVOLUTION_API_URL}/webhook/delete/${instanceName}`;
+        method = "DELETE";
+        break;
+      case "findMessages":
+        url = `${EVOLUTION_API_URL}/chat/findMessages/${instanceName}`;
+        method = "POST";
+        body = JSON.stringify(data || {});
+        break;
       default:
         throw new Error(`Ação desconhecida: ${action}`);
     }

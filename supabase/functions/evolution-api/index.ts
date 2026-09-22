@@ -41,7 +41,15 @@ serve(async (req) => {
           instanceName: data?.instanceName || instanceName,
           integration: data?.integration || "WHATSAPP-BAILEYS",
           qrcode: true,
-          ...(data?.webhookUrl ? { webhook: { url: data.webhookUrl, byEvents: false, base64: false, events: ["MESSAGES_UPSERT"] } } : {}),
+          ...(data?.webhookUrl ? {
+            webhook: {
+              enabled: true,
+              url: data.webhookUrl,
+              webhookByEvents: false,
+              webhookBase64: false,
+              events: ["MESSAGES_UPSERT"],
+            },
+          } : {}),
           ...(data || {}),
         });
         break;
